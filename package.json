@@ -1,0 +1,14 @@
+{
+  "name": "open-bubble-tank-3",
+  "private": true,
+  "version": "0.1.0",
+  "description": "An open-source re-creation of Bubble Tanks 3 — Next.js + Tailwind shell around a dependency-free Canvas2D game core.",
+  "scripts": {
+    "dev": "pnpm --filter @open-bt3/web dev",
+    "build": "pnpm --filter @open-bt3/web build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm --filter @open-bt3/game test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "packageManager": "pnpm@10.8.1"
+}
