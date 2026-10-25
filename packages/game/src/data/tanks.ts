@@ -11,6 +11,7 @@ import builtinTanksJson from "./json/builtin-tanks.json";
 import { getBubbleCost, getGunCost, isWeapon } from "./parts";
 import type { TankStats } from "./rules";
 import { TankData } from "../tanks/TankData";
+import { randInt } from "../core/math";
 
 interface BuiltinTankEntry {
   name: string;
@@ -86,4 +87,30 @@ export function getStartingAvatar(): TankData {
   const basic = AVATAR_PRESETS.find((t) => t.tankName === "Basic Tank") ?? AVATAR_PRESETS[0];
   if (!basic) throw new Error("builtin tank bank is missing the starter avatar");
   return basic;
+}
+
+/**
+ * Local avatar-tank search — the port's replacement for the dead
+ * bubbletanks.com ServerSearch (docs 05 §8: the original already had a local
+ * fallback path; with the server gone, local filling is the primary path).
+ * Mirrors the server query of UpgradeMenu `_-96` (docs 04 §4.3):
+ * `type=Avatar, class=<c>, gunPoints=<gp>` — i.e. avatar-legal built-ins of
+ * the target class whose gun-point total fits the tier budget and whose
+ * complexity fits the 100 BP cap. Order is randomized per call like the
+ * server's.
+ */
+export function searchLocalAvatarOffers(
+  classNum: number,
+  gpBudget: number,
+  exclude: ReadonlySet<string> = new Set<string>(),
+): TankData | null {
+  const pool = AVATAR_PRESETS.filter(
+    (tank) =>
+      tank.numClass === classNum &&
+      tank.numGunPoints <= gpBudget &&
+      tank.numBubbles <= 100 &&
+      !exclude.has(tank.strTankCode),
+  );
+  if (pool.length === 0) return null;
+  return pool[randInt(0, pool.length - 1)] ?? null;
 }

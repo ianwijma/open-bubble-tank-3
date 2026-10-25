@@ -31,6 +31,7 @@ import { atan2Deg, rotateToward } from "../core/math";
 import type { InputSnapshot } from "../core/Input";
 import { getPartName, getPartPluralName } from "../data/parts";
 import type { Tank } from "../entities/Tank";
+import { TankData } from "../tanks/TankData";
 
 export type AdjustWorldFn = (vx: number, vy: number) => void;
 
@@ -47,10 +48,17 @@ export class AvatarInterface {
   private vy = 0;
   private stickyFrames = 0;
 
-  /** `intTankLevel` (0..6). Lives here in the original; see class doc note. */
+  /** `intTankLevel` (0..6) — authoritative here, as in the original (it must
+   * survive avatar replacement, which the per-Tank copy in M1 did not). */
   intTankLevel = 0;
   /** `_-6L` progression slot codes (null until the UpgradeMenu exists). */
   progressionSlots: Array<string | null> = [null, null, null, null, null, null, null];
+  /** `maxClass` DataObject — bumped to min(level+1, 6) on level-up (creator gate, M4). */
+  maxClass = 1;
+  /** Fired when `_-dI` needs the UpgradeMenu (slot missing/invalid). */
+  onOpenUpgradeMenu: (() => void) | null = null;
+  /** Fired when `_-dI` restores a progression slot: (code, dir ±1). */
+  onRestoreAvatar: ((code: string, dir: 1 | -1) => void) | null = null;
 
   /** `blnStopShoot` — blocks firing during jumps/menus. */
   blnStopShoot = false;
@@ -247,24 +255,62 @@ export class AvatarInterface {
   }
 
   /** `_-dI` — level-up at full health / downgrade at 0 (docs 04 §6.2). */
+  /**
+   * `UpdateAvatar` tail (AvatarInterface.as:1044-1112) — slot bookkeeping +
+   * the tier life override. `dir` 0 = menu choice (slot overwrite), ±1 =
+   * level-up/downgrade restore (fill-if-null). `numLife` is forced to the
+   * tier's life budget regardless of the tank code; the new tank starts at
+   * `numLife/75 + 1` (level-up/choice sliver) or `numLife − 1` (downgrade,
+   * near-full so you don't instantly re-die).
+   */
+  updateAvatar(avatar: Tank, dir: 1 | -1 | 0): void {
+    this.avatar = avatar;
+    const level = this.intTankLevel;
+    if (dir === 0) {
+      this.progressionSlots[level] = avatar.data.strTankCode;
+    } else if (this.progressionSlots[level] == null) {
+      this.progressionSlots[level] = avatar.data.strTankCode;
+    }
+    const lifeBudget = TANK_LEVEL_LIFE[Math.min(6, Math.max(0, level))] ?? TANK_LEVEL_LIFE[6]!;
+    avatar.data.numLife = lifeBudget;
+    avatar.intTankLife = dir >= 0 ? Math.floor(lifeBudget / LEVELUP_SPAWN_DIVISOR) + 1 : lifeBudget - 1;
+    avatar.refreshAvatarStats();
+  }
+
+  /**
+   * `_-dI` (AvatarInterface.as:280-334) — runs every frame:
+   *   full life & level < 6 → level up (maxClass bump; import the
+   *     progression slot, or open the UpgradeMenu when missing/invalid);
+   *   life ≤ 0 & level > 0 → downgrade in place (same rules).
+   * Level 0 death is handled by the world's death-jump instead.
+   */
   private levelCheck(): void {
     const avatar = this.avatar;
     if (!avatar) return;
-    const level = avatar.intTankLevel;
-    if (avatar.intTankLife === avatar.data.numLife && level < 6) {
-      // Level-up: the original imports a progression-slot tank or opens the
-      // UpgradeMenu — STUBBED in M1: bump level + life table in place.
-      avatar.intTankLevel = level + 1;
-      avatar.data.numLife = TANK_LEVEL_LIFE[Math.min(6, avatar.intTankLevel)] ?? 2000;
-      avatar.intTankLife = Math.floor(avatar.data.numLife / LEVELUP_SPAWN_DIVISOR) + 1;
-      avatar.refreshAvatarStats();
-      this.progressionSlots[avatar.intTankLevel] = this.progressionSlots[avatar.intTankLevel] ?? null;
-    } else if (avatar.intTankLife <= 0 && avatar.intTankLevel > 0) {
-      // Death-downgrade: rebuild the previous progression tank at maxHP − 1.
-      avatar.intTankLevel = level - 1;
-      avatar.data.numLife = TANK_LEVEL_LIFE[Math.min(6, avatar.intTankLevel)] ?? 2000;
-      avatar.intTankLife = avatar.data.numLife - 1;
-      avatar.refreshAvatarStats();
+    if (avatar.intTankLife === avatar.data.numLife) {
+      if (this.intTankLevel < this.progressionSlots.length - 1) {
+        this.intTankLevel++;
+        this.maxClass = Math.min(this.intTankLevel + 1, 6);
+        const slot = this.progressionSlots[this.intTankLevel];
+        const data = new TankData();
+        if (slot == null || !data.importTankCode(slot)) {
+          // `_-AD._-YK()` (cheat-console close) is M5.
+          this.onOpenUpgradeMenu?.();
+        } else {
+          this.onRestoreAvatar?.(slot, 1);
+        }
+      }
+    } else if (avatar.intTankLife <= 0) {
+      if (this.intTankLevel > 0) {
+        this.intTankLevel--;
+        const slot = this.progressionSlots[this.intTankLevel];
+        const data = new TankData();
+        if (slot == null || !data.importTankCode(slot)) {
+          this.onOpenUpgradeMenu?.();
+        } else {
+          this.onRestoreAvatar?.(slot, -1);
+        }
+      }
     }
   }
 
@@ -298,7 +344,7 @@ export class AvatarInterface {
     ctx.fillText(avatar.data.tankName, lx + 8, ly + 27);
     // level pips
     for (let i = 0; i <= 6; i++) {
-      ctx.fillStyle = i <= avatar.intTankLevel ? "rgba(255,220,120,0.95)" : "rgba(255,255,255,0.18)";
+      ctx.fillStyle = i <= this.intTankLevel ? "rgba(255,220,120,0.95)" : "rgba(255,255,255,0.18)";
       ctx.beginPath();
       ctx.arc(lx + 162, ly + 8 + i * 4, 1.8, 0, Math.PI * 2);
       ctx.fill();

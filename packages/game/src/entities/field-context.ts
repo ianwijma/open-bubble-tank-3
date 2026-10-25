@@ -106,6 +106,12 @@ export interface FieldContext {
   };
   /** True while a bubblefield jump is mid-flight (spawning is refused). */
   readonly jumping: boolean;
+  /**
+   * The avatar's current tank level (`objAvatarInterface.intTankLevel` as
+   * read by `_ -Zx.Damage`'s level-0 death clamp). The world keeps this in
+   * sync on the avatar's field.
+   */
+  avatarLevel: number;
 }
 
 /** Field-side contract every bullet implements (`_-BL`). */

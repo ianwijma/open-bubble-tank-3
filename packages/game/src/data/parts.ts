@@ -136,6 +136,11 @@ export function getPartPluralName(id: number): string {
   return getPart(id)?.strPluralName ?? getPartName(id);
 }
 
+/** `_-bv` — strShortName (the base label list groupings use when >2 entries). */
+export function getPartShortName(id: number): string {
+  return getPart(id)?.strShortName ?? getPartName(id);
+}
+
 export function getPartsByBucket(bucket: keyof typeof PART_BUCKETS): PartRow[] {
   return (rawDatabase.arrays as Record<string, PartRow[]>)[PART_BUCKETS[bucket]] ?? [];
 }

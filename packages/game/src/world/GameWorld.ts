@@ -22,13 +22,15 @@ import {
 import { DisplayNode } from "../core/DisplayNode";
 import { randInt } from "../core/math";
 import type { InputSnapshot } from "../core/Input";
-import { BOSSES, getStartingAvatar } from "../data/tanks";
+import { BOSSES, getStartingAvatar, searchLocalAvatarOffers } from "../data/tanks";
+import { CLASS_DATA, TIER_UNLOCKS } from "../data/parts";
 import { generateBossWave, generateWave, UnitTable } from "../data/waves";
 import { EnemyAI } from "../entities/EnemyAI";
 import type { SoundCue } from "../entities/field-context";
 import { Tank, TANK_TYPE } from "../entities/Tank";
 import { TankData } from "../tanks/TankData";
 import { AvatarInterface } from "../ui/AvatarInterface";
+import { UpgradeMenu, type UpgradeMenuContext } from "../ui/UpgradeMenu";
 import { BubbleField } from "./BubbleField";
 import { DESTROYED, FieldStore, type StoredEnemy } from "./FieldStore";
 
@@ -75,6 +77,17 @@ export class GameWorld {
   visitedCount = 0;
   private frameCounter = 0;
 
+  /** `PlayerProfile.currentAvatar` — the avatar's encrypted tank code. */
+  currentAvatarCode = "";
+  /** `arrUnlockedObjects` — part ids granted by tier progression. */
+  unlockedParts = new Set<number>();
+  /** `_-ch` — "my tanks" history (filled by the tank creator, M4). */
+  savedTanks: Array<{ CLASS: number; GP: number; TIER: number; Data: string }> = [];
+
+  /** The open UpgradeMenu screen, if any (Main state 4: the world freezes). */
+  private upgradeMenuInstance: UpgradeMenu | null = null;
+  private modeBeforeMenu: WorldMode = WORLD_MODE.PLAYING;
+
   /** Fired when the boss field is beaten (win screen is M5). */
   onBossDefeated: (() => void) | null = null;
   /** Sound sink wired by the Game (noop until assets load). */
@@ -100,13 +113,126 @@ export class GameWorld {
     this.avatar.x = 0;
     this.avatar.y = 0;
     this.avatar.onAvatarDeathJump = () => this.deathJump();
+    this.currentAvatarCode = this.avatar.data.strTankCode;
 
     this.avatarView.addChild(this.avatar.view);
     this.hud.setup(this.avatar, (vx, vy) => this.adjustBubblefieldObjects(vx, vy));
+    this.hud.onOpenUpgradeMenu = () => this.openUpgradeMenu();
+    this.hud.onRestoreAvatar = (code, dir) => {
+      this.currentAvatarCode = code;
+      this.placeAvatar(dir);
+    };
+    // Initial placement runs through UpdateAvatar(1) in the original — which
+    // both records the starting code in slot 0 and starts the avatar at the
+    // life sliver (`numLife/75 + 1`); starting at full life would trip the
+    // `_-dI` level-up on frame one.
+    this.hud.updateAvatar(this.avatar, 1);
     this.hud.markCurrent(0, 0);
     this.hud.currentCol = 0;
     this.hud.currentRow = 0;
+    this.currentField.avatarLevel = this.hud.intTankLevel;
     this.positionCurrentField();
+  }
+
+  // ----------------------------------------------------------- avatar swap
+
+  /**
+   * `PlaceAvatar` — rebuild the avatar from `currentAvatarCode`, preserving
+   * position, then `UpdateAvatar(dir)`: dir 0 overwrites the progression
+   * slot (menu choice), ±1 fill-if-null (level-up/downgrade restore).
+   */
+  placeAvatar(dir: 1 | -1 | 0 = 1): void {
+    const old = this.avatar;
+    const data = new TankData();
+    if (!data.importTankCode(this.currentAvatarCode)) return; // invalid code — keep the old tank
+    old.deactivate();
+    this.avatarView.removeChild(old.view);
+    const tank = new Tank(data, TANK_TYPE.AVATAR, this.currentField);
+    tank.x = old.x;
+    tank.y = old.y;
+    tank.onAvatarDeathJump = () => this.deathJump();
+    this.avatar = tank;
+    this.avatarView.addChild(tank.view);
+    tank.intState = 1;
+    this.currentField.avatarLevel = this.hud.intTankLevel;
+    this.hud.updateAvatar(tank, dir);
+  }
+
+  get upgradeMenuOpen(): boolean {
+    return this.upgradeMenuInstance !== null;
+  }
+
+  /** `_-3F` — open the UpgradeMenu screen; the world freezes (Main state 4). */
+  openUpgradeMenu(): void {
+    if (this.upgradeMenuInstance) return;
+    this.modeBeforeMenu = this.mode;
+    this.mode = WORLD_MODE.MENU;
+    this.upgradeMenuInstance = new UpgradeMenu();
+    this.upgradeMenuInstance.setup(this.makeMenuContext());
+    this.view.addChild(this.upgradeMenuInstance.view);
+  }
+
+  /** `_-7x` — close the menu, restore the world mode. */
+  private closeUpgradeMenu(): void {
+    if (!this.upgradeMenuInstance) return;
+    this.view.removeChild(this.upgradeMenuInstance.view);
+    this.upgradeMenuInstance = null;
+    this.mode = this.modeBeforeMenu;
+  }
+
+  /** `ViewerUp` apply — set `currentAvatar`, re-place with slot overwrite. */
+  private applyUpgradeChoice(code: string): void {
+    this.currentAvatarCode = code;
+    this.closeUpgradeMenu();
+    this.placeAvatar(0);
+  }
+
+  /** `UpdateUnlocked` — reaching tier N unlocks every part of tiers < N. */
+  private grantTierUnlocks(level: number): void {
+    for (let tier = 0; tier < level; tier++) {
+      for (const id of TIER_UNLOCKS[tier] ?? []) this.unlockedParts.add(id);
+    }
+  }
+
+  /** `GetDefaultTank` — saved-history lookup (verbatim: GP index is
+   * `arrGP[level − 1]`, the original's off-by-one vs the server query). */
+  private getDefaultTank(classNum: number): TankData | null {
+    const level = this.hud.intTankLevel;
+    const classData = CLASS_DATA[classNum - 1];
+    const gp = Math.trunc(classData?.arrGP[level - 1] ?? Number.NaN);
+    for (let i = this.savedTanks.length - 1; i >= 0; i--) {
+      const entry = this.savedTanks[i]!;
+      if (entry.CLASS === classNum && entry.GP === gp && entry.TIER === level) {
+        const data = new TankData();
+        if (!data.importTankCode(entry.Data)) return null;
+        return data;
+      }
+    }
+    return null;
+  }
+
+  private makeMenuContext(): UpgradeMenuContext {
+    const world = this;
+    return {
+      get avatar(): TankData {
+        return world.avatar.data;
+      },
+      get level(): number {
+        return world.hud.intTankLevel;
+      },
+      searchOffer(classNum: number, gpBudget: number, exclude: ReadonlySet<string>): TankData | null {
+        return searchLocalAvatarOffers(classNum, gpBudget, exclude);
+      },
+      defaultTank(classNum: number): TankData | null {
+        return world.getDefaultTank(classNum);
+      },
+      grantTierUnlocks(level: number): void {
+        world.grantTierUnlocks(level);
+      },
+      applyChoice(code: string): void {
+        world.applyUpgradeChoice(code);
+      },
+    };
   }
 
   private makeField(options: { scale: number; col: number; row: number }): BubbleField {
@@ -139,6 +265,11 @@ export class GameWorld {
 
   /** `BTAGameWorld.Run` mode switch (BTAGameWorld.as:517-560). */
   run(input: InputSnapshot): void {
+    // Main state 4/5 (upgrade screen): the world runs nothing but the menu.
+    if (this.upgradeMenuInstance) {
+      this.upgradeMenuInstance.run(input);
+      return;
+    }
     this.frameCounter++;
     // Aim point: the mouse in field-local space (the HUD/guns read it).
     this.currentField.avatarAimPoint = {
@@ -279,7 +410,7 @@ export class GameWorld {
       // (BTAGameWorld.as:1748) — a death jump always takes the deadhead
       // branch even when the boss condition holds.
       const bossReady =
-        !this.bossTriggered && this.avatar.intTankLife >= 1000 && this.avatar.intTankLevel >= 5;
+        !this.bossTriggered && this.avatar.intTankLife >= 1000 && this.hud.intTankLevel >= 5;
       if (deathJump) {
         // Post-death retry field: deadheads only (`_-Wd(-1)`).
         this.spawnWave(field, generateWave(-1, this.units));
