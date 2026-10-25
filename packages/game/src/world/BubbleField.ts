@@ -108,6 +108,9 @@ export class BubbleField implements FieldContext {
     this.jumpingFlag = v;
   }
 
+  /** The avatar's tank level (synced by the world; see FieldContext). */
+  avatarLevel = 0;
+
   get frame(): number {
     return this.frameCount;
   }

@@ -105,6 +105,7 @@ export {
   getClassData,
   getDefaultUnlockedObjects,
   getGunCost,
+  getPartShortName,
   getLower,
   getPart,
   getPartName,
@@ -129,6 +130,7 @@ export {
   ENEMY_BANK,
   ENEMY_BANK_STATS,
   getStartingAvatar,
+  searchLocalAvatarOffers,
   statRecord,
 } from "./data/tanks";
 export {
@@ -196,6 +198,8 @@ export type { FieldRecord, StoredEnemy } from "./world/FieldStore";
 // ---------------------------------------------------------------- ui
 export { AvatarInterface, roundRect } from "./ui/AvatarInterface";
 export type { AdjustWorldFn } from "./ui/AvatarInterface";
+export { UpgradeMenu, describeTankParts } from "./ui/UpgradeMenu";
+export type { UpgradeMenuContext } from "./ui/UpgradeMenu";
 
 // ---------------------------------------------------------------- render
 export { renderTree } from "./render/Renderer";

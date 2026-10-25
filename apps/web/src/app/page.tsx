@@ -130,7 +130,7 @@ export default function Home() {
       if (!game) return;
       setPhase((phase) => {
         if (phase === "menu" && (e.key === " " || e.key === "Enter")) return "playing";
-        if (phase === "playing" && (e.key === "p" || e.key === "P" || e.key === "Escape")) {
+        if (phase === "playing" && !game.world.upgradeMenuOpen && (e.key === "p" || e.key === "P" || e.key === "Escape")) {
           game.world.pause();
           return "paused";
         }

@@ -59,12 +59,10 @@ export class Tank implements TankLike {
   blnWallFlower = false;
   blnStationary = false;
   /**
-   * `intTankLevel` (0..6) — lives on the AvatarInterface in the original;
-   * kept on the avatar tank in the port (the HUD reads it from here).
-   * Deviation noted in the stubs ledger.
+   * Level-0 death: the original clamps life to 1 and forces a deadhead jump.
+   * (The avatar's tank level lives on the AvatarInterface and reaches the
+   * damage chain via `FieldContext.avatarLevel`.)
    */
-  intTankLevel = 0;
-  /** Level-0 death: the original clamps life to 1 and forces a deadhead jump. */
   onAvatarDeathJump: (() => void) | null = null;
 
   // --- Status effects ---
@@ -293,7 +291,7 @@ export class Tank implements TankLike {
         // life clamps to 1 and the world is forced into a deadhead-field jump
         // (`_-1E(true)`). At level ≥ 1 life stays ≤ 0 and the HUD's `_-dI`
         // downgrades the tank in place next frame (docs 08 §2.3, 04 §6.2).
-        if (this.intTankLevel === 0) {
+        if ((this.field?.avatarLevel ?? 0) === 0) {
           this.intTankLife = 1;
           this.onAvatarDeathJump?.();
         }
