@@ -1,0 +1,2511 @@
+{
+ "_-Pb": [
+  {
+   "chance": 50,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 2,
+     "max": 5
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "SmallFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 50,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "SmallFighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 25,
+   "scale": 1.0,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 25,
+   "scale": 1.6,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 2,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 25,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "SmallFighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallFighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "Balanced",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 25,
+   "scale": 1.0,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "Balanced",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 25,
+   "scale": 1.6,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "SmallFighter",
+     "min": 2,
+     "max": 4
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 2,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 3,
+     "max": 5
+    },
+    {
+     "key": "HeavyMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 0,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 30,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "OpenEarlyUnit",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "SmallFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 30,
+   "scale": 1.4,
+   "instructions": [
+    {
+     "key": "OpenEarlyUnit",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "OpenEarlyUnit",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.8,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "SmallFighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 15,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallFighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "LightHeavy",
+     "min": 2,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Fighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "LightHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 0,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 15,
+   "scale": 1.0,
+   "instructions": [
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "LightHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 15,
+   "scale": 1.3,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "Balanced",
+     "min": 2,
+     "max": 4
+    },
+    {
+     "key": "LightHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 15,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "Balanced",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  }
+ ],
+ "_-ad": [
+  {
+   "chance": 30,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "OpenEarlyUnit",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "SmallFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 30,
+   "scale": 1.4,
+   "instructions": [
+    {
+     "key": "OpenEarlyUnit",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "OpenFighter",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 25,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "OpenEarlyUnit",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "Balanced",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 25,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "OpenEarlyUnit",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "OpenHeavy",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 10,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "OpenMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "LightHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "LightHeavy",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "Fighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.8,
+   "instructions": [
+    {
+     "key": "SmallFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "Fighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.3,
+   "instructions": [
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "LightHeavy",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "Fighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 2,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Balanced",
+     "min": 2,
+     "max": 2
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.0,
+   "instructions": [
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Heavy",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.4,
+   "instructions": [
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Heavy",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "LightHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.0,
+   "instructions": [
+    {
+     "key": "SmallFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "Fighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 30,
+   "scale": 1.0,
+   "instructions": [
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "Fighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 10,
+   "scale": 2.0,
+   "instructions": [
+    {
+     "key": "TinyDeadHead",
+     "min": 3,
+     "max": 9
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 3,
+     "max": 9
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 2,
+     "max": 4
+    }
+   ]
+  },
+  {
+   "chance": 40,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Heavy",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 10,
+   "scale": 1.0,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Fighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 10,
+   "scale": 1.4,
+   "instructions": [
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "LightHeavy",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.8,
+   "instructions": [
+    {
+     "key": "SmallFighter",
+     "min": 6,
+     "max": 14
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 10,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "SmallSupport",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Balanced",
+     "min": 2,
+     "max": 4
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.0,
+   "instructions": [
+    {
+     "key": "HeavyFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 2.0,
+   "instructions": [
+    {
+     "key": "FighterMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallFighter",
+     "min": 2,
+     "max": 4
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "HeavyFighter",
+     "min": 2,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "Fighter",
+     "min": 3,
+     "max": 4
+    },
+    {
+     "key": "Heavy",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "LightHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "HeavyFighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 15,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "HeavyFighter",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Balanced",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.8,
+   "instructions": [
+    {
+     "key": "HeavyMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallFighter",
+     "min": 2,
+     "max": 4
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "Fighter",
+     "min": 3,
+     "max": 4
+    },
+    {
+     "key": "Heavy",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "LightHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "HeavyFighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 10,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "SmallSupport",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 10,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "LightHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  }
+ ],
+ "_-9k": [
+  {
+   "chance": 15,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "OpenEarlyUnit",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "OpenFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 15,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "OpenFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "OpenFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.6,
+   "instructions": [
+    {
+     "key": "OpenEarlyUnit",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "OpenHeavy",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 15,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "OpenFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "OpenFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 15,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "OpenHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.6,
+   "instructions": [
+    {
+     "key": "OpenEarlyUnit",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "OpenHeavy",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 10,
+   "scale": 1.3,
+   "instructions": [
+    {
+     "key": "OpenMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "OpenFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "SuperFighter",
+     "min": 2,
+     "max": 2
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "LightHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.4,
+   "instructions": [
+    {
+     "key": "Fighter",
+     "min": 3,
+     "max": 4
+    },
+    {
+     "key": "Heavy",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "LightHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 2.0,
+   "instructions": [
+    {
+     "key": "SmallFighter",
+     "min": 3,
+     "max": 10
+    },
+    {
+     "key": "SmallFighter",
+     "min": 3,
+     "max": 10
+    },
+    {
+     "key": "Fighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 10,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 7,
+   "scale": 1.6,
+   "instructions": [
+    {
+     "key": "HeavyMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "Fighter",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 8,
+   "scale": 2.0,
+   "instructions": [
+    {
+     "key": "FighterMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallFighter",
+     "min": 2,
+     "max": 4
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.6,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 40,
+   "scale": 1.3,
+   "instructions": [
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 2,
+     "max": 2
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "SuperFighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "LightHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.3,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 2,
+     "max": 2
+    },
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.0,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 15,
+   "scale": 1.4,
+   "instructions": [
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 7,
+   "scale": 1.6,
+   "instructions": [
+    {
+     "key": "HeavyMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 8,
+   "scale": 2.0,
+   "instructions": [
+    {
+     "key": "FighterMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.3,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 2,
+     "max": 2
+    },
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.0,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 20,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 15,
+   "scale": 1.4,
+   "instructions": [
+    {
+     "key": "SuperFighter",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 2,
+     "max": 4
+    },
+    {
+     "key": "SmallSupport",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "EarlyHeavy",
+     "min": 1,
+     "max": 2
+    }
+   ]
+  },
+  {
+   "chance": 7,
+   "scale": 1.6,
+   "instructions": [
+    {
+     "key": "HeavyMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 8,
+   "scale": 2.0,
+   "instructions": [
+    {
+     "key": "FighterMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 10,
+   "scale": 1.6,
+   "instructions": [
+    {
+     "key": "HeavyMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "VeryHeavy",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "SuperFighter",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 10,
+   "scale": 2.0,
+   "instructions": [
+    {
+     "key": "FighterMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SuperFighter",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "LightHeavy",
+     "min": 0,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.3,
+   "instructions": [
+    {
+     "key": "VeryHeavy",
+     "min": 2,
+     "max": 2
+    },
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.0,
+   "instructions": [
+    {
+     "key": "SmallFighter",
+     "min": 4,
+     "max": 8
+    },
+    {
+     "key": "FighterMiniBoss",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "Balanced",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.3,
+   "instructions": [
+    {
+     "key": "EarlyHeavy",
+     "min": 0,
+     "max": 3
+    },
+    {
+     "key": "LightHeavy",
+     "min": 0,
+     "max": 3
+    },
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "SmallSupport",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 3,
+     "max": 5
+    },
+    {
+     "key": "Fighter",
+     "min": 3,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "SmallDeadHead",
+     "min": 2,
+     "max": 8
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 3,
+     "max": 5
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 3,
+     "max": 4
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "SuperFighter",
+     "min": 2,
+     "max": 4
+    },
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.4,
+   "instructions": [
+    {
+     "key": "HeavyFighter",
+     "min": 2,
+     "max": 4
+    },
+    {
+     "key": "VeryHeavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.4,
+   "instructions": [
+    {
+     "key": "HeavyMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "TinyDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "LightHeavy",
+     "min": 2,
+     "max": 4
+    },
+    {
+     "key": "SuperFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "HeavyFighter",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.2,
+   "instructions": [
+    {
+     "key": "HeavyMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "FighterMiniBoss",
+     "min": 1,
+     "max": 1
+    },
+    {
+     "key": "MediumDeadHead",
+     "min": 1,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  },
+  {
+   "chance": 5,
+   "scale": 1.1,
+   "instructions": [
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 3
+    },
+    {
+     "key": "Heavy",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "SuperFighter",
+     "min": 2,
+     "max": 4
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 3
+    }
+   ]
+  }
+ ],
+ "_-Iy": [
+  {
+   "chance": 100,
+   "scale": null,
+   "instructions": [
+    {
+     "key": "SmallDeadHead",
+     "min": 2,
+     "max": 3
+    },
+    {
+     "key": "SmallDeadHead",
+     "min": 1,
+     "max": 2
+    },
+    {
+     "key": "MediumDeadHead",
+     "min": 2,
+     "max": 2
+    }
+   ]
+  }
+ ]
+}
