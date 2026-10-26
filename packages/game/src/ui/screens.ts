@@ -71,6 +71,11 @@ abstract class MenuScreen {
 export class MainMenu extends MenuScreen {
   showSettings = false;
   private settings: SettingsPanel | null = null;
+  /** Play-button glow pulse state (the original's PlayButtonEffect). */
+  private glow = 0;
+  private glowDir: 1 | -1 = 1;
+  /** One-line stub notice (Parts Packs / Credits / PMG). */
+  private note: string | null = null;
 
   constructor(
     private readonly hasSavedData: boolean,
@@ -82,18 +87,30 @@ export class MainMenu extends MenuScreen {
   }
 
   protected tick(input: ScreenInput, released: boolean): void {
+    // Play-button glow pulse (the original's PlayButtonEffect: _-SA bounces
+    // in [0,2] driving a white GlowFilter — ported as a shadowBlur pulse).
+    this.glow = Math.min(2, Math.max(0, this.glow + 0.05 * (this.glowDir === 1 ? 1 : -1)));
+    if (this.glow >= 2) this.glowDir = -1;
+    if (this.glow <= 0) this.glowDir = 1;
+
     if (this.settings) {
       this.settings.run(input);
       if (this.settings.closed) this.settings = null;
       return;
     }
     if (!released) return;
-    if (this.hit(STAGE_CENTER_X - 90, 210, 180, 44)) {
+    if (this.hit(STAGE_CENTER_X - 90, 190, 180, 44)) {
       this.closed = true;
       this.onPlay();
-    } else if (this.hit(STAGE_CENTER_X - 90, 266, 180, 44)) {
+    } else if (this.hit(STAGE_CENTER_X - 90, 246, 180, 44)) {
       this.settings = new SettingsPanel(this.settingsStore);
       this.showSettings = true;
+    } else if (this.hit(STAGE_CENTER_X - 90, 302, 180, 44)) {
+      this.note = "Parts Packs Manager is not implemented yet.";
+    } else if (this.hit(STAGE_CENTER_X - 90, 358, 180, 44)) {
+      this.note = "Credits: an open re-implementation of Bubble Tanks 3 by Hero Interactive.";
+    } else if (this.hit(STAGE_CENTER_X - 90, 414, 180, 30)) {
+      this.note = "Play More Games! — not wired in the open port.";
     }
   }
 
@@ -116,22 +133,31 @@ export class MainMenu extends MenuScreen {
     ctx.textAlign = "center";
     ctx.fillStyle = "#dff3f5";
     ctx.font = "bold 46px system-ui, sans-serif";
-    ctx.fillText("Bubble Tanks 3", STAGE_CENTER_X, 130);
+    ctx.fillText("Bubble Tanks 3", STAGE_CENTER_X, 110);
     ctx.font = "13px system-ui, sans-serif";
     ctx.fillStyle = "rgba(223,243,245,0.6)";
-    ctx.fillText(`open re-implementation · v${VERSION_TEXT}`, STAGE_CENTER_X, 156);
+    ctx.fillText(`open re-implementation · v${VERSION_TEXT}`, STAGE_CENTER_X, 136);
 
     if (this.settings) {
       this.settings.draw(ctx);
     } else {
-      const pulse = (Math.sin(performance.now() / 400) + 1) / 2;
-      ctx.globalAlpha = 0.75 + 0.25 * pulse;
-      this.button(ctx, STAGE_CENTER_X - 90, 210, 180, 44, this.hasSavedData ? "Continue" : "Play", this.hit(STAGE_CENTER_X - 90, 210, 180, 44));
-      ctx.globalAlpha = 1;
-      this.button(ctx, STAGE_CENTER_X - 90, 266, 180, 44, "Settings", this.hit(STAGE_CENTER_X - 90, 266, 180, 44));
-      ctx.font = "11px system-ui, sans-serif";
-      ctx.fillStyle = "rgba(223,243,245,0.45)";
-      ctx.fillText("WASD move · mouse aim · click shoot · Space secondaries · P pause", STAGE_CENTER_X, STAGE_HEIGHT - 26);
+      // Play with the original's white glow pulse
+      const hovered = this.hit(STAGE_CENTER_X - 90, 190, 180, 44);
+      ctx.save();
+      ctx.shadowColor = "rgba(255,255,255,0.9)";
+      ctx.shadowBlur = 6 + this.glow * 4 + (hovered ? 4 : 0);
+      this.button(ctx, STAGE_CENTER_X - 90, 190, 180, 44, this.hasSavedData ? "Continue" : "Play", hovered);
+      ctx.restore();
+      this.button(ctx, STAGE_CENTER_X - 90, 246, 180, 44, "Settings", this.hit(STAGE_CENTER_X - 90, 246, 180, 44));
+      this.button(ctx, STAGE_CENTER_X - 90, 302, 180, 44, "Parts Packs", this.hit(STAGE_CENTER_X - 90, 302, 180, 44));
+      this.button(ctx, STAGE_CENTER_X - 90, 358, 180, 44, "Credits", this.hit(STAGE_CENTER_X - 90, 358, 180, 44));
+      ctx.font = "12px system-ui, sans-serif";
+      this.button(ctx, STAGE_CENTER_X - 90, 414, 180, 30, "Play More Games!", this.hit(STAGE_CENTER_X - 90, 414, 180, 30));
+      if (this.note) {
+        ctx.font = "12px system-ui, sans-serif";
+        ctx.fillStyle = "rgba(223,243,245,0.75)";
+        ctx.fillText(this.note, STAGE_CENTER_X, 168);
+      }
     }
     ctx.textAlign = "left";
     ctx.restore();
@@ -213,71 +239,163 @@ export class PauseMenu extends MenuScreen {
 
 // ----------------------------------------------------------- settings panel
 
-/** SettingsPanel (docs 04 §5.5): fps 35/50/65, sounds/music/shake toggles;
- * every change persists through the `BTA` mirror. */
+/**
+ * SettingsPanel (docs 04 §3.4, symbol 645): frame rate 35/50/65 (gs1-3),
+ * quality Low/Medium/High (g1-3), music/sounds/screen-shake/efficiency
+ * toggles (m/s/v/e pairs), a hotkeys page (h1-h6 display; rebinding is a
+ * stub), and Back. Every change persists through the `BTA` mirror.
+ * Efficiency = the original's `_-UF(true)` preset: music/sounds off,
+ * quality LOW, fps 90, shake off.
+ */
+const QUALITY_OPTIONS = ["LOW", "MEDIUM", "HIGH"] as const;
+
 export class SettingsPanel extends MenuScreen {
+  private showHotkeys = false;
+
   constructor(private readonly settings: SettingsStore) {
     super();
     this.view.draw = (ctx) => this.draw(ctx);
   }
 
+  private static readonly ROW_Y = [110, 154, 198, 242, 286, 330] as const;
+  private static readonly LABEL_RIGHT = 210;
+  private static readonly WIDGET_X = 240;
+
   protected tick(_input: ScreenInput, released: boolean): void {
     if (!released) return;
     const v = this.settings.value;
-    const row = (y: number): boolean => this.mouse.y >= y - 16 && this.mouse.y <= y + 6;
-    // fps radios
-    if (row(140)) {
-      FPS_OPTIONS.forEach((fps, i) => {
-        if (this.hit(240 + i * 70, 124, 50, 24)) this.settings.save({ f: fps });
-      });
+    const [fpsY, qY, musicY, soundsY, shakeY, effY] = SettingsPanel.ROW_Y;
+    if (this.showHotkeys) {
+      // hotkeys page: back to settings (rebinding is a stub — ledger)
+      if (this.hit(230, 380, 90, 30)) this.showHotkeys = false;
       return;
     }
+    // fps radios
+    FPS_OPTIONS.forEach((fps, i) => {
+      if (this.hit(SettingsPanel.WIDGET_X + i * 60, fpsY, 52, 26)) this.settings.save({ f: fps });
+    });
+    // quality radios
+    QUALITY_OPTIONS.forEach((q, i) => {
+      if (this.hit(SettingsPanel.WIDGET_X + i * 76, qY, 68, 26)) this.settings.save({ q });
+    });
     // toggles
-    if (row(196) && this.hit(240, 180, 120, 24)) this.settings.save({ s: !v.s });
-    else if (row(236) && this.hit(240, 220, 120, 24)) this.settings.save({ m: !v.m });
-    else if (row(276) && this.hit(240, 260, 120, 24)) this.settings.save({ ss: !v.ss });
+    if (this.hit(SettingsPanel.WIDGET_X, musicY, 110, 26)) this.settings.save({ m: !v.m });
+    else if (this.hit(SettingsPanel.WIDGET_X, soundsY, 110, 26)) this.settings.save({ s: !v.s });
+    else if (this.hit(SettingsPanel.WIDGET_X, shakeY, 110, 26)) this.settings.save({ ss: !v.ss });
+    // efficiency: on = the original's preset; off = restore the defaults
+    else if (this.hit(SettingsPanel.WIDGET_X, effY, 110, 26)) {
+      const efficiencyOn = v.m === false && v.s === false && v.q === "LOW" && v.f === 90;
+      if (efficiencyOn) this.settings.save({ m: true, s: true, q: "HIGH", f: 50, ss: true });
+      else this.settings.save({ m: false, s: false, q: "LOW", f: 90, ss: false });
+    }
+    // hotkeys page
+    else if (this.hit(SettingsPanel.WIDGET_X, 374, 110, 26)) this.showHotkeys = true;
     // back
-    if (this.hit(STAGE_WIDTH / 2 - 60, STAGE_HEIGHT - 70, 120, 36)) this.closed = true;
+    if (this.hit(360, 374, 100, 30)) this.closed = true;
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
+    if (this.closed) return;
     ctx.save();
+    ctx.fillStyle = "#142b2c";
+    ctx.fillRect(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
     ctx.textAlign = "center";
     ctx.fillStyle = "#dff3f5";
-    ctx.font = "bold 20px system-ui, sans-serif";
-    ctx.fillText("Settings", STAGE_CENTER_X, 96);
-    const v = this.settings.value;
-    ctx.font = "13px system-ui, sans-serif";
-    // frame rate radios (35/50/65 — docs 04 §5.5)
-    ctx.fillStyle = "rgba(223,243,245,0.85)";
-    ctx.fillText("Frame Rate", STAGE_CENTER_X, 132);
-    FPS_OPTIONS.forEach((fps, i) => {
-      const x = 240 + i * 70;
-      const active = v.f === fps;
-      ctx.fillStyle = active ? "rgba(127,227,238,0.3)" : "rgba(255,255,255,0.08)";
-      ctx.fillRect(x, 124, 50, 24);
-      ctx.strokeStyle = active ? "#7fe3ee" : "rgba(127,227,238,0.25)";
-      ctx.strokeRect(x, 124, 50, 24);
-      ctx.fillStyle = active ? "#dff9fc" : "rgba(223,243,245,0.8)";
-      ctx.fillText(String(fps), x + 25, 141);
-    });
-    // toggles
-    const toggle = (label: string, y: number, on: boolean): void => {
+    ctx.font = "bold 22px system-ui, sans-serif";
+    ctx.fillText(this.showHotkeys ? "Hotkeys" : "Settings", STAGE_CENTER_X, 64);
+
+    const label = (text: string, y: number): void => {
       ctx.fillStyle = "rgba(223,243,245,0.85)";
+      ctx.font = "13px system-ui, sans-serif";
       ctx.textAlign = "right";
-      ctx.fillText(label, 230, y + 16);
+      ctx.fillText(text, SettingsPanel.LABEL_RIGHT, y + 18);
       ctx.textAlign = "center";
-      ctx.fillStyle = on ? "rgba(140,220,140,0.35)" : "rgba(255,120,100,0.25)";
-      ctx.fillRect(240, y, 120, 24);
-      ctx.strokeStyle = on ? "rgba(140,220,140,0.8)" : "rgba(255,120,100,0.6)";
-      ctx.strokeRect(240, y, 120, 24);
-      ctx.fillStyle = "#dff9fc";
-      ctx.fillText(on ? "On" : "Off", 300, y + 16);
     };
-    toggle("Sounds", 180, v.s);
-    toggle("Music", 220, v.m);
-    toggle("Screen Shake", 260, v.ss);
-    this.button(ctx, STAGE_WIDTH / 2 - 60, STAGE_HEIGHT - 70, 120, 36, "Back", this.hit(STAGE_WIDTH / 2 - 60, STAGE_HEIGHT - 70, 120, 36));
+    const radio = (options: string[], y: number, activeIndex: number, w: number): void => {
+      options.forEach((opt, i) => {
+        const x = SettingsPanel.WIDGET_X + i * (w + 8);
+        const active = i === activeIndex;
+        const hovered = this.hit(x, y, w, 26);
+        ctx.fillStyle = active ? "rgba(127,227,238,0.3)" : hovered ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.08)";
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, 26, 6);
+        ctx.fill();
+        ctx.strokeStyle = active ? "#7fe3ee" : "rgba(127,227,238,0.25)";
+        ctx.stroke();
+        ctx.fillStyle = active ? "#dff9fc" : "rgba(223,243,245,0.8)";
+        ctx.font = "12px system-ui, sans-serif";
+        ctx.fillText(opt, x + w / 2, y + 17);
+      });
+    };
+    const toggle = (labelText: string, y: number, on: boolean): void => {
+      label(labelText, y);
+      const x = SettingsPanel.WIDGET_X;
+      const hovered = this.hit(x, y, 110, 26);
+      ctx.fillStyle = on ? "rgba(140,220,140,0.3)" : "rgba(255,120,100,0.22)";
+      ctx.beginPath();
+      ctx.roundRect(x, y, 110, 26, 6);
+      ctx.fill();
+      ctx.strokeStyle = on ? "rgba(140,220,140,0.8)" : "rgba(255,120,100,0.55)";
+      ctx.stroke();
+      ctx.fillStyle = "#dff9fc";
+      ctx.font = "12px system-ui, sans-serif";
+      ctx.fillText(on ? "On" : "Off", x + 55, y + 17);
+      if (hovered) {
+        ctx.strokeStyle = "rgba(127,227,238,0.5)";
+        ctx.stroke();
+      }
+    };
+
+    const v = this.settings.value;
+    const [fpsY, qY, musicY, soundsY, shakeY, effY] = SettingsPanel.ROW_Y;
+    if (this.showHotkeys) {
+      // hotkeys display (h1..h6; rebinding is a stub — ledger)
+      const names = ["Up", "Down", "Left", "Right", "Pause", "Lock"];
+      names.forEach((name, i) => {
+        const y = 110 + i * 40;
+        label(name, y);
+        const key = String.fromCharCode((v as unknown as Record<string, number>)[`h${i + 1}`] ?? 0);
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        ctx.beginPath();
+        ctx.roundRect(SettingsPanel.WIDGET_X, y, 110, 26, 6);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(127,227,238,0.25)";
+        ctx.stroke();
+        ctx.fillStyle = "#dff9fc";
+        ctx.font = "12px system-ui, sans-serif";
+        ctx.fillText(key, SettingsPanel.WIDGET_X + 55, y + 17);
+      });
+      this.button(ctx, 230, 380, 90, 30, "Back", this.hit(230, 380, 90, 30));
+      ctx.textAlign = "left";
+      ctx.restore();
+      return;
+    }
+
+    label("Frame Rate", fpsY);
+    radio(FPS_OPTIONS.map(String), fpsY, FPS_OPTIONS.indexOf(v.f as (typeof FPS_OPTIONS)[number]), 52);
+    label("Quality", qY);
+    radio([...QUALITY_OPTIONS], qY, QUALITY_OPTIONS.indexOf(v.q), 68);
+    toggle("Music", musicY, v.m);
+    toggle("Sounds", soundsY, v.s);
+    toggle("Screen Shake", shakeY, v.ss);
+    const efficiencyOn = v.m === false && v.s === false && v.q === "LOW" && v.f === 90;
+    toggle("Efficiency", effY, efficiencyOn);
+    // bottom row: Hotkeys (opens the key display) + Done
+    ctx.fillStyle = "rgba(223,243,245,0.85)";
+    ctx.font = "13px system-ui, sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText("Hotkeys", SettingsPanel.LABEL_RIGHT, 374 + 18);
+    ctx.textAlign = "center";
+    const hotHover = this.hit(SettingsPanel.WIDGET_X, 374, 110, 26);
+    ctx.fillStyle = hotHover ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.08)";
+    ctx.beginPath();
+    ctx.roundRect(SettingsPanel.WIDGET_X, 374, 110, 26, 6);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(127,227,238,0.25)";
+    ctx.stroke();
+    ctx.fillStyle = "#dff9fc";
+    ctx.fillText("Configure", SettingsPanel.WIDGET_X + 55, 374 + 17);
+    this.button(ctx, 360, 374, 100, 30, "Done", this.hit(360, 374, 100, 30));
     ctx.textAlign = "left";
     ctx.restore();
   }
