@@ -95,6 +95,8 @@ export class GameWorld {
   /** The open UpgradeMenu screen, if any (Main state 4: the world freezes). */
   private upgradeMenuInstance: UpgradeMenu | null = null;
   private modeBeforeMenu: WorldMode = WORLD_MODE.PLAYING;
+  /** `intCurrentGameMode` — the mode saved at jump start, restored on arrival. */
+  private modeBeforeJump: WorldMode = WORLD_MODE.PLAYING;
   /** The open TankCreatorScreen (M4). */
   private creatorInstance: TankCreatorScreen | null = null;
 
@@ -584,6 +586,11 @@ export class GameWorld {
     // is set — keep the current field's mirror flag in step.
     this.currentField.setJumping(true);
     this.hud.blnStopShoot = true;
+    // `_-4v = false` (BTAGameWorld.as:678): the transit step owns the motion;
+    // the HUD's velocity model keeps updating but is not applied.
+    this.hud.blnMoveAvatar = false;
+    // `intCurrentGameMode = _-Up` — restored on arrival.
+    this.modeBeforeJump = this.mode;
     this.mode = WORLD_MODE.TRANSIT;
   }
 
@@ -789,6 +796,10 @@ export class GameWorld {
     this.jumping = false;
     this.currentField.setJumping(false);
     this.hud.blnStopShoot = false;
+    // `_-4v = true` (BTAGameWorld.as:1212) + `_-Up = intCurrentGameMode`:
+    // hand motion back to the HUD and leave transit.
+    this.hud.blnMoveAvatar = true;
+    this.mode = this.modeBeforeJump;
     // Primary weapon counters reset to 0 on arrival (docs 03 §2).
     for (const w of this.avatar.primaryWeapons) w.intCounter = 0;
   }
