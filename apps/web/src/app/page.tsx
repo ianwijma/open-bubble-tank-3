@@ -82,22 +82,29 @@ export default function Home() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const gameRef = useRef<{
+  type GameHandle = {
     world: GameWorld;
     loop: FixedLoop;
     input: Input;
     data: GameData;
     sink: SwfSoundSink;
-  } | null>(null);
+  };
+  const gameRef = useRef<GameHandle | null>(null);
+  // The loaded SWF bundle, retained so a sink created later (Start click)
+  // still picks up the sounds from a boot-phase load.
+  const bundleRef = useRef<SwfAssetBundle | null>(null);
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback((): GameHandle | null => {
     const canvas = canvasRef.current;
-    if (!canvas || gameRef.current) return;
+    if (!canvas || gameRef.current) return null;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) return null;
 
     const data = new GameData();
     const sink = new SwfSoundSink();
+    // Sounds from a SWF loaded before Start (boot phase) or reloaded
+    // mid-game land here via the retained bundle ref.
+    if (bundleRef.current) void sink.load(bundleRef.current);
     const world = new GameWorld();
     world.soundSink = { play: (cue) => sink.play(cue) };
     world.onQuit = () => {
@@ -145,6 +152,7 @@ export default function Home() {
     loop.start();
     gameRef.current = { world, loop, input, data, sink };
     setPhase("running");
+    return gameRef.current;
   }, []);
 
   // Teardown on unmount (dev strict-mode double mount).
@@ -162,18 +170,19 @@ export default function Home() {
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const bundle = await loadSwfAssets(bytes, (line) => console.log(`[swf] ${line}`));
-      // Install the parsed art: parts/fields/bullets rebuild through the
-      // SymbolClass map on the next world construction.
+      // Install the parsed art + retain the bundle: parts/fields/bullets
+      // rebuild through the SymbolClass map on the next world construction,
+      // and the (new) sink picks the sounds up from the retained bundle.
       setArtStore(new SwfArtStore(bundle));
+      bundleRef.current = bundle;
       if (gameRef.current) {
         // A mid-game load restarts the world so every view rebuilds with
         // the real art (the boot flow loads before Start, so this is the
-        // rare path).
+        // rare path). startGame wires the fresh sink to the bundle.
         gameRef.current.loop.stop();
         gameRef.current = null;
         startGame();
       }
-      await gameRef.current?.sink.load(bundle);
       setBundleName(file.name);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));

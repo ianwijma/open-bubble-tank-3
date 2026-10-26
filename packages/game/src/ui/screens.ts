@@ -303,6 +303,7 @@ export class WinScreen extends MenuScreen {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
+    if (this.closed) return; // dismissed — stop painting the overlay
     ctx.save();
     ctx.fillStyle = "rgba(8,18,20,0.92)";
     ctx.fillRect(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
@@ -339,6 +340,7 @@ export class StartNotification extends MenuScreen {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
+    if (this.closed) return; // dismissed — stop painting the overlay
     ctx.save();
     ctx.fillStyle = "rgba(6,14,16,0.85)";
     ctx.fillRect(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
