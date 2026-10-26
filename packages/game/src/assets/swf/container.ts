@@ -33,7 +33,19 @@ export async function decompressSWF(raw: Uint8Array): Promise<DecompressedSwf> {
   if (sig === "FWS") return { bytes: raw, sig, version, declaredLength, compression: "none", ms: 0 };
   if (sig === "CWS") {
     const t0 = now();
-    const body = await inflate(raw.subarray(8));
+    let body: Uint8Array;
+    try {
+      body = await inflate(raw.subarray(8));
+    } catch {
+      // Some dumps carry a stale CWS signature over an uncompressed body
+      // (the dossier's binary does: file size == declared length). Be
+      // liberal — try the body as raw tag data before giving up.
+      if (raw.length === declaredLength) {
+        body = raw.subarray(8);
+      } else {
+        throw new Error("SWF zlib stream is corrupt (and the body is not an uncompressed fallback)");
+      }
+    }
     const bytes = new Uint8Array(8 + body.length);
     bytes[0] = 0x46; // F
     bytes[1] = 0x57; // W

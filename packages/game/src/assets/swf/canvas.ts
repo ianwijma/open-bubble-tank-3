@@ -318,6 +318,42 @@ export function pathForLayer(layer: ShapeLayer): Path2D {
   return p;
 }
 
+/**
+ * Mask path for a shape: every run's filled outline in px, with the mask
+ * placement's matrix baked in numerically (no DOMMatrix dependency, so
+ * this works in Node test shims too). Used to implement SWF clip depths.
+ */
+export function maskPathFor(
+  shape: ParsedShape | ParsedMorph,
+  matrix: { a: number; b: number; c: number; d: number; tx: number; ty: number } | undefined,
+): Path2D {
+  const m = matrix ?? { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 };
+  const pt = (tx: number, ty: number): [number, number] => [
+    (tx * m.a + ty * m.c + m.tx) / 20,
+    (tx * m.b + ty * m.d + m.ty) / 20,
+  ];
+  const p = new Path2D();
+  const srcRuns = shape.runs;
+  const mo = shape as ParsedMorph;
+  const runs = mo.endRuns && mo.endRuns.length > 0 ? mo.endRuns : srcRuns;
+  for (const run of runs) {
+    const [sx, sy] = pt(run.start[0], run.start[1]);
+    p.moveTo(sx, sy);
+    for (const op of run.ops) {
+      if (op.t === "L") {
+        const [x, y] = pt(op.x, op.y);
+        p.lineTo(x, y);
+      } else {
+        const [cx, cy] = pt(op.cx, op.cy);
+        const [x, y] = pt(op.x, op.y);
+        p.quadraticCurveTo(cx, cy, x, y);
+      }
+    }
+    p.closePath();
+  }
+  return p;
+}
+
 const CAP_CSS: Record<number, CanvasLineCap> = { 0: "round", 1: "butt", 2: "square" };
 const JOIN_CSS: Record<number, CanvasLineJoin> = { 0: "round", 1: "bevel", 2: "miter" };
 

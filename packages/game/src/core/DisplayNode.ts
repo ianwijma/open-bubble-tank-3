@@ -45,6 +45,10 @@ export class DisplayNode {
     this.name = name;
   }
 
+  /** Natural size of a shape-backed node in px (twips/20), from its bounds. */
+  naturalWidth = 0;
+  naturalHeight = 0;
+
   getParent(): DisplayNode | null {
     return this.parent;
   }
@@ -123,4 +127,23 @@ export class DisplayNode {
     fn(this);
     for (const c of this.children) c.forEachDepthFirst(fn);
   }
+}
+
+/**
+ * Draw a DisplayNode subtree directly onto a context (transforms, alpha,
+ * draw callbacks, children in order). Used by callers rendering outside
+ * the main render pass (bullets, screen painters, masked art wrappers).
+ */
+export function drawDisplayTree(ctx: CanvasRenderingContext2D, node: DisplayNode): void {
+  ctx.save();
+  ctx.translate(node.x, node.y);
+  if (node.rotation !== 0) ctx.rotate((node.rotation * Math.PI) / 180);
+  if (node.scaleX !== 1 || node.scaleY !== 1) ctx.scale(node.scaleX, node.scaleY);
+  if (node.alpha !== 1) ctx.globalAlpha *= Math.max(0, Math.min(1, node.alpha));
+  node.draw?.(ctx);
+  for (let i = 0; i < node.getChildCount(); i++) {
+    const child = node.getChildAt(i);
+    if (child) drawDisplayTree(ctx, child);
+  }
+  ctx.restore();
 }

@@ -10,7 +10,7 @@ import type { TankDetail } from "../tanks/TankData";
 
 /** Sound cues the combat code raises; the SoundPlayer decides what actually plays. */
 export type SoundCue =
-  | "shoot"      // _-dH (avatar shots, throttled by the field)
+  | "shoot"      // _-dH (ENEMY shots only — the avatar's cannon is silent; throttled by the field)
   | "hit"        // _-49 (player bullet hits, 4-frame throttle)
   | "avatarHit"  // _-JV (0.9 volume, 7-frame throttle)
   | "collect"    // _-Fe (0.6 volume, 4-frame throttle)
