@@ -20,6 +20,8 @@ import {
   HUD_SLIDE_FRAMES,
   MAX_VELOCITY,
   SECONDARY_COOLDOWN_DEFAULT,
+  STAGE_CENTER_X,
+  STAGE_CENTER_Y,
   STAGE_HEIGHT,
   STAGE_WIDTH,
   STICKY_SPEED_MULT,
@@ -434,6 +436,61 @@ export class AvatarInterface {
       }
     }
     ctx.restore();
+    this.drawEnemyOverlays(ctx);
+  }
+
+  /**
+   * Interface parts 5001/5002 (docs 06 §5.1-5.2): off-screen enemy arrows and
+   * floating health bars, drawn in stage space. Bars skip while the world is
+   * in mode 3 (`GetWState`), and the width cap replicates the original's
+   * `> 120 → 100` bug verbatim.
+   */
+  private drawEnemyOverlays(ctx: CanvasRenderingContext2D): void {
+    const avatar = this.avatar;
+    const field = avatar?.field;
+    if (!avatar || !field) return;
+    const parts = avatar.interfaceParts.map((w) => w.intObjID);
+    const hasRadar = parts.includes(5001);
+    const hasHealth = parts.includes(5002);
+    if (!hasRadar && !hasHealth) return;
+    const view = field.view;
+    const enemies = field.targets.enemies;
+
+    if (hasRadar) {
+      for (const enemy of enemies) {
+        if (!enemy.alive) continue;
+        // outside the 550×450 viewport around the avatar (field-local)
+        if (Math.abs(enemy.x - avatar.x) <= 275 && Math.abs(enemy.y - avatar.y) <= 225) continue;
+        ctx.save();
+        ctx.translate(STAGE_CENTER_X, STAGE_CENTER_Y);
+        ctx.rotate((atan2Deg(enemy.y - avatar.y, enemy.x - avatar.x) * Math.PI) / 180);
+        ctx.fillStyle = "rgba(255,120,90,0.9)";
+        ctx.beginPath();
+        ctx.moveTo(14, 0);
+        ctx.lineTo(2, 5);
+        ctx.lineTo(2, -5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    if (hasHealth && field.worldMode !== 3) {
+      for (const enemy of enemies) {
+        if (!enemy.alive) continue;
+        let width = enemy.data.numClass * 20;
+        if (width > 120) width = 100; // original bug, replicated (docs 06 §5.2)
+        const sx = view.x + enemy.x;
+        const sy = view.y + enemy.y - 10 - enemy.numRadius;
+        const frac = enemy.data.numLife > 0 ? Math.max(0, Math.min(1, enemy.intTankLife / enemy.data.numLife)) : 0;
+        ctx.save();
+        ctx.fillStyle = "rgba(10,20,24,0.7)";
+        ctx.fillRect(sx - width / 2, sy, width, 5);
+        ctx.fillStyle = frac > 0.5 ? "rgba(120,230,140,0.9)" : "rgba(255,120,90,0.9)";
+        ctx.fillRect(sx - width / 2, sy, width * frac, 5);
+        ctx.restore();
+      }
+    }
   }
 
   currentCol = 0;

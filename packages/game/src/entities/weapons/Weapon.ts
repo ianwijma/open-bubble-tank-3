@@ -42,9 +42,11 @@ export abstract class Weapon {
     this.detailIndex = detailIndex;
   }
 
-  /** `Weapon.Setup`. */
-  setup(tank: Tank): void {
+  /** `Weapon.Setup` — `master` fixes the timer model (1 avatar / 2 ally / 3
+   * enemy; docs 06 §2.7) before any per-part setup runs. */
+  setup(tank: Tank, master: WeaponMaster): void {
     this.owner = tank;
+    this.intWeaponMaster = master;
     // Class 4-6 tanks: guns aim independently (docs 06 §2.2/§2.5).
     if (tank.data.numClass > 3) this.aimAtMouse = true;
     this.separatePartSetup();

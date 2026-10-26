@@ -12,41 +12,11 @@
 import { FIELD_RADIUS } from "../../core/constants";
 import { randInt } from "../../core/math";
 import type { TankDetail } from "../../tanks/TankData";
-import { Bullet, drawShellBullet } from "../bullets/Bullet";
+import { Bullet, EnemySeekerBullet, EnemyShellBullet, ShellBullet, drawShellBullet } from "../bullets/Bullet";
 import type { FieldContext, TankLike } from "../field-context";
 import type { Tank } from "../Tank";
+import { createSpecialBehavior, createSpecialWeapon } from "./arsenal";
 import { Weapon } from "./Weapon";
-
-// --- Bullet classes ----------------------------------------------------------
-
-/** `_-U7` — standard bubble round (player side). */
-export class ShellBullet extends Bullet {
-  constructor(x: number, y: number, rotation: number, scale: number, speed: number, damage: number) {
-    super(x, y, rotation, speed, damage, { scale, isEnemy: false, bulletRadius: 8 });
-  }
-}
-
-/** `_-GV` — standard enemy shell. */
-export class EnemyShellBullet extends Bullet {
-  constructor(x: number, y: number, rotation: number, scale: number, speed: number, damage: number) {
-    super(x, y, rotation, speed, damage, { scale, isEnemy: true, bulletRadius: 8 });
-  }
-}
-
-/** `_-QM` — enemy seeker: homes onto the avatar, can be shot down. */
-export class EnemySeekerBullet extends Bullet {
-  constructor(x: number, y: number, rotation: number, scale: number, speed: number, damage: number, target: TankLike | null) {
-    super(x, y, rotation, speed, damage, {
-      scale,
-      isEnemy: true,
-      target,
-      seeker: true,
-      destroyable: true,
-      rotateTowardTarget: true,
-      bulletRadius: 8,
-    });
-  }
-}
 
 // --- Spec tables -------------------------------------------------------------
 
@@ -236,9 +206,12 @@ export class BehaviorPart {
   }
 }
 
-/** `Weapon.forPart` implementation — spec-table resolution. */
+/** `Weapon.forPart` implementation — spec-table resolution with the M3
+ * arsenal consulted first (bespoke per-part classes). */
 export function createWeaponForPart(owner: Tank, detail: TankDetail, index: number): Weapon | null {
   const { type } = detail;
+  const special = createSpecialWeapon(type, index);
+  if (special) return special;
   const spec = AVATAR_PRIMARIES[type] ?? ENEMY_PRIMARIES[type];
   if (spec) return new PartWeapon(type, index, spec);
   if (BEHAVIORS.has(type)) return null; // behaviors route through BehaviorPart
@@ -246,13 +219,15 @@ export function createWeaponForPart(owner: Tank, detail: TankDetail, index: numb
   return null;
 }
 
-/** Factory used by Tank for behavior categories. */
+/** Factory used by Tank for behavior categories — the M3 behaviors (6002-6005)
+ * come from the arsenal; 6001 Aggressor stays here. */
 export function createBehaviorForPart(detail: TankDetail, index: number): BehaviorPart | null {
+  const special = createSpecialBehavior(detail.type, index);
+  if (special) return special as BehaviorPart;
   if (!BEHAVIORS.has(detail.type)) {
     warnUnimplemented(detail.type);
     return null;
   }
-  if (detail.type !== 6001) warnUnimplemented(detail.type); // 6002-6005 stubbed no-ops
   return new BehaviorPart(detail.type, index);
 }
 

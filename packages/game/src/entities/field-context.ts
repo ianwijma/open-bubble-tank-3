@@ -48,10 +48,15 @@ export interface DamageTargets {
 export interface TankLike {
   readonly id: number;
   readonly isAvatar: boolean;
+  /** Owner class: 1 avatar / 2 ally / 3 enemy (`_-Zx.intType`). */
+  readonly tankType: number;
+  /** Field back-reference (weapons read the aim point / spawn through it). */
+  readonly field: FieldContext | null;
   readonly data: {
     numClass: number;
     numLife: number;
     numBubblesReturned: number;
+    strTankCode: string;
     details: TankDetail[];
   };
   /** Field-local position (field origin = registration center). */
@@ -63,8 +68,20 @@ export interface TankLike {
   intTankLife: number;
   /** Tanks (and their part views) vanish when dead. */
   readonly alive: boolean;
+  /** `blnShieled` — shield bubble up: all damage/status blocked. */
+  readonly shielded: boolean;
+  /** `blnForcefielded` — forcefield currently absorbing damage. */
+  readonly hasForcefield: boolean;
+  /** Speed multiplier (movement px/frame basis; lead prediction input). */
+  readonly numSpeed: number;
+  /** `PredictTargetLocation` — lead prediction for auto-aim guns (docs 06 §5.3). */
+  predictTargetLocation(frames: number): { x: number; y: number } | null;
+  /** `GetClosestDetailToCenterPoint` — mount point closest to registration. */
+  getClosestDetailToCenterPoint(): { x: number; y: number };
   damage(dmg: number, source?: unknown): void;
   addLife(amount: number): void;
+  /** Knockback (Ripple/Spike/area push): `vecForce` for AI tanks, HUD velocity for the avatar. */
+  push(fx: number, fy: number): void;
   /**
    * Per-part circle hit test at field-local coordinates. `otherRadius` is the
    * testing bullet's radius (circle-circle); omitted = point test.
@@ -76,6 +93,12 @@ export interface TankLike {
   stunMe(frames: number): void;
   weakMe(frames?: number): void;
   infectMe(): void;
+  /** AI steering waypoint (`_-Ab` seek target; null = wander). */
+  swarmPoint: { x: number; y: number } | null;
+  /** Single-teleport-per-frame flag (`blnOkToTeleport`, docs 06 §4.5). */
+  blnOkToTeleport: boolean;
+  /** Mounted secondary weapons (ally-bay capacity counts, docs 06 §4.7). */
+  readonly secondaryWeapons: ReadonlyArray<{ intObjID: number }>;
 }
 
 export interface FieldContext {
@@ -85,6 +108,8 @@ export interface FieldContext {
   readonly frameCount: number;
   /** All tanks currently registered (avatar excluded). */
   readonly targets: DamageTargets;
+  /** Live bullets (bullet-vs-bullet scans, docs 08 §8). */
+  readonly bullets: readonly FieldBullet[];
   /** The player avatar (null during transitions). */
   readonly avatar: TankLike | null;
   /**
@@ -100,6 +125,43 @@ export interface FieldContext {
    */
   spawnInfectorSeekers(x: number, y: number, count: number): void;
   spawnBulletFromField(bullet: FieldBullet): void;
+  /** `SpawnNewAlly` (docs 07 §7.1) — ally-bay drone tank from an encrypted code. */
+  spawnNewAlly(code: string, x: number, y: number): void;
+  /** `SpawnNewEnemy` (docs 07 §6.4) — Enemy Spawner tank creation. */
+  spawnNewEnemy(code: string, x: number, y: number): void;
+
+  // --- area-effect API (`_-0D`, docs 08 §4) ---
+  /**
+   * `AreaDamageTest` (docs 08 §4.2). mode "r" = enemies + their destroyable
+   * bullets; "e" = avatar + allies (optional radial push, non-avatar targets
+   * pushed at 2×) + player-side destroyable bullets; "t" = "e" without push.
+   * Range test uses the ×1.15 slack (`_-E6`).
+   */
+  areaDamageTest(
+    mode: "r" | "e" | "t",
+    source: TankLike | null,
+    x: number,
+    y: number,
+    radius: number,
+    damage: number,
+    push?: boolean,
+  ): void;
+  /** `AreaStunTest` — stun every enemy in radius + stun visuals. */
+  areaStunTest(x: number, y: number, radius: number, duration: number): void;
+  /** `AreaBurstTest` — enemies ≤ radius (plain, no slack) + enemy bullet wipe. */
+  areaBurstTest(x: number, y: number, radius: number, damage: number): void;
+  /** `DroneConversionTest` — seeker-family bullets flip teams (docs 08 §4.5). */
+  droneConversionTest(x: number, y: number, toEnemySide: boolean): void;
+
+  /** Screen effects sink (`sEffects`): shake/flash consumed by the renderer. */
+  readonly screen: {
+    shake(magnitude: number): void;
+    flash(): void;
+  };
+  /** Field root display node (teleport shifts it to re-anchor the world). */
+  readonly view: DisplayNode;
+  /** World mode mirror (`GetWState`) — health-readout hides bars in mode 3. */
+  readonly worldMode: number;
   addEffect(request: EffectRequest): void;
   sounds: {
     play(cue: SoundCue): void;
@@ -112,6 +174,16 @@ export interface FieldContext {
    * sync on the avatar's field.
    */
   avatarLevel: number;
+
+  /**
+   * `blnApocalypse` (docs 08 §3.1) — set while the Apocalypse round's
+   * death-shrink animation runs; player control is paused while it is set.
+   */
+  blnApocalypse: boolean;
+  /** `beginApocalypse` — starts the field's death-shrink sequence. */
+  beginApocalypse(): void;
+  /** `endApocalypse` — Neutralizer: cancels the shrink and restores the field. */
+  endApocalypse(): void;
 }
 
 /** Field-side contract every bullet implements (`_-BL`). */
@@ -130,6 +202,8 @@ export interface FieldBullet {
   readonly seeker: boolean;
   /** May be destroyed by AoE blasts / opposing seekers. */
   readonly destroyable: boolean;
+  /** `blnReadyForDeleteQueue` — force-remove flag drained by the field loop. */
+  readyForDelete: boolean;
   run(): boolean;
   deactivate(): void;
 }

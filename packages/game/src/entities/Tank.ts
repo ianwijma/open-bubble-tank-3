@@ -81,6 +81,15 @@ export class Tank implements TankLike {
   protected forcefieldDamageCount = 0;
   blnShieled = false;
 
+  /** `TankLike.shielded` — the shield bubble blocks all damage/status. */
+  get shielded(): boolean {
+    return this.blnShieled;
+  }
+  /** `TankLike.hasForcefield` — the forcefield is currently absorbing. */
+  get hasForcefield(): boolean {
+    return this.blnForcefielded;
+  }
+
   // --- Weapon arrays (registration mirrors `_-Zx.Register*`) ---
   readonly primaryWeapons: Weapon[] = [];
   readonly secondaryWeapons: Weapon[] = [];
@@ -162,7 +171,8 @@ export class Tank implements TankLike {
         const weapon = createWeaponForPart(this, detail, index);
         if (weapon) {
           slot.push(weapon);
-          weapon.setup(this);
+          // Timer model by owner (docs 06 §2.7): 1 avatar / 2 ally / 3 enemy.
+          weapon.setup(this, ownerType === TANK_TYPE.AVATAR ? 1 : ownerType === TANK_TYPE.ALLY ? 2 : 3);
           return;
         }
       }
@@ -417,6 +427,17 @@ export class Tank implements TankLike {
 
   getStuck(frames = STICKY_FRAMES): void {
     this.stickyTimer = frames;
+  }
+
+  /**
+   * `TankLike.push` — knockback impulse (Ripple Generator / Spike / area
+   * push, docs 07 §6.7): applied through `vecForce`, which the movement
+   * integrator adds and decays each frame. The avatar routes through the
+   * HUD instead (see `AvatarInterface.pushAvatar`).
+   */
+  push(fx: number, fy: number): void {
+    this.vecForce.x += fx;
+    this.vecForce.y += fy;
   }
 
   jamMe(frames = JAM_FRAMES): void {

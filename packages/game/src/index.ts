@@ -173,15 +173,20 @@ export { TANK_TYPE, Tank, makePartView } from "./entities/Tank";
 export type { TankOwnerType } from "./entities/Tank";
 export { EnemyAI } from "./entities/EnemyAI";
 export { LifeBubble } from "./entities/LifeBubble";
-export { Bullet, angleToTarget, drawShellBullet } from "./entities/bullets/Bullet";
+export {
+  Bullet,
+  EnemySeekerBullet,
+  EnemyShellBullet,
+  ShellBullet,
+  angleToTarget,
+  bulletsOverlap,
+  drawShellBullet,
+} from "./entities/bullets/Bullet";
 export type { BulletOptions } from "./entities/bullets/Bullet";
 export { Weapon } from "./entities/weapons/Weapon";
 export type { WeaponMaster } from "./entities/weapons/Weapon";
 export {
   BehaviorPart,
-  EnemySeekerBullet,
-  EnemyShellBullet,
-  ShellBullet,
   createBehaviorForPart,
   createWeaponForPart,
   wallRadius,
