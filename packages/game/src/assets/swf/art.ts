@@ -12,8 +12,8 @@
  * the game drives all motion in code (docs 11 §2).
  */
 
-import { DisplayNode } from "../../core/DisplayNode";
-import { drawShapeLayers, buildShapeLayers } from "./canvas";
+import { DisplayNode, drawDisplayTree } from "../../core/DisplayNode";
+import { drawShapeLayers, buildShapeLayers, maskPathFor } from "./canvas";
 import type { SwfAssetBundle, SwfImage, ParsedShape, ParsedMorph, SpritePlacement, SwfMatrix, SwfCxform } from "./index";
 
 export class SwfArtStore {
@@ -59,7 +59,14 @@ export class SwfArtStore {
     }
   }
 
-  /** Frame-1 placement graph → DisplayNode tree. */
+  /**
+   * Frame-1 placement graph → DisplayNode tree. Implements SWF clip depths:
+   * a placement carrying `clipDepth` is a MASK (never painted itself) whose
+   * shape clips the placements in `(depth, clipDepth]` — Flash's masking
+   * model. The Bubblefield's wall/under-effect masks are solid green fills
+   * that must never paint, and the avatarUnderBubble disc is clipped by the
+   * field's interior mask.
+   */
   private instantiateSprite(sprite: { id: number; placements: SpritePlacement[] }): DisplayNode {
     const node = new DisplayNode(undefined, `sprite${sprite.id}`);
     // depth → latest placement (a `move` record updates the prior depth)
@@ -70,13 +77,37 @@ export class SwfArtStore {
       byDepth.set(p.depth, p);
     }
     const ordered = [...byDepth.values()].sort((a, b) => a.depth - b.depth);
+    // collect the mask layers first (their paths are needed by the masked)
+    const masks: Array<{ from: number; to: number; path: Path2D }> = [];
     for (const p of ordered) {
+      if (!p.clipDepth) continue;
+      const character = this.bundle.characters.get(p.charId!);
+      const shape = character && (character.type === "shape" ? character.shape : character.type === "morph" ? character.morph : null);
+      if (!shape) continue;
+      masks.push({ from: p.depth + 1, to: p.clipDepth, path: maskPathFor(shape, p.matrix) });
+    }
+    for (const p of ordered) {
+      if (p.clipDepth) continue; // mask layers never paint themselves
       const child = this.instantiate(p.charId!);
       if (!child) continue;
       applyMatrix(child, p.matrix);
       applyCxform(child, p.colorTransform);
       if (p.name) child.setName(p.name);
-      node.addChild(child);
+      const covering = masks.filter((m) => p.depth >= m.from && p.depth <= m.to);
+      if (covering.length > 0) {
+        // draw the child inside the mask's path (the path lives in this
+        // sprite's coordinate space; the child's own transform nests inside)
+        const wrapped = child;
+        const clipNode = new DisplayNode((ctx) => {
+          ctx.save();
+          for (const m of covering) ctx.clip(m.path);
+          drawDisplayTree(ctx, wrapped);
+          ctx.restore();
+        }, `clip${p.depth}`);
+        node.addChild(clipNode);
+      } else {
+        node.addChild(child);
+      }
     }
     return node;
   }
@@ -88,7 +119,12 @@ export class SwfArtStore {
       this.shapeCache.set(shape.id, layers);
     }
     const images = this.bundle.images;
-    return new DisplayNode((ctx) => drawShapeLayers(ctx, layers!, images), `shape${shape.id}`);
+    const node = new DisplayNode((ctx) => drawShapeLayers(ctx, layers!, images), `shape${shape.id}`);
+    // natural size (twips → px) for consumers that scale art to a metric
+    // (e.g. the avatar under-bubble, sized to the tank's diameter)
+    node.naturalWidth = (shape.bounds.xMax - shape.bounds.xMin) / 20;
+    node.naturalHeight = (shape.bounds.yMax - shape.bounds.yMin) / 20;
+    return node;
   }
 
   private instantiateImage(image: SwfImage): DisplayNode | null {

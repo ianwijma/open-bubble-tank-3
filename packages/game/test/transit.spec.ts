@@ -91,13 +91,15 @@ describe("transit: jump start → arrival handoff", () => {
     }
     expect(arrivalFrame).toBeGreaterThanOrEqual(0);
 
-    // the generated wave populated the field; give the AI time to engage
+    // the generated wave populated the field; swim into it (the avatar
+    // arrives at the entry rim, up to ~600px from the random spawn area) so
+    // an enemy is guaranteed to come into aggro range, then wait for fire
     const field = world.currentField;
     expect(field.enemies.length).toBeGreaterThan(0);
     const bullets = field as unknown as { bullets: unknown[] };
     let fired = bullets.bullets.length;
-    for (let i = 0; i < 400 && fired === 0; i++) {
-      world.run(idle());
+    for (let i = 0; i < 500 && fired === 0; i++) {
+      world.run(i < 120 ? { ...idle(), right: true } : idle());
       fired = bullets.bullets.length;
     }
     expect(fired).toBeGreaterThan(0);

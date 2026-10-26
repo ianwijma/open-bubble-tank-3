@@ -136,6 +136,11 @@ export class Tank implements TankLike {
     return this.intState !== TANK_STATE.DEAD;
   }
 
+  /** `_ -ZD()` — the tank's bounding radius (max over mounted parts). */
+  get radius(): number {
+    return this.numRadius;
+  }
+
   // ------------------------------------------------------------------ build
 
   private buildParts(details: TankDetail[]): void {

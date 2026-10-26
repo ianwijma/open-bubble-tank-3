@@ -97,6 +97,8 @@ export class GameWorld {
   private modeBeforeMenu: WorldMode = WORLD_MODE.PLAYING;
   /** `intCurrentGameMode` — the mode saved at jump start, restored on arrival. */
   private modeBeforeJump: WorldMode = WORLD_MODE.PLAYING;
+  /** The SWF art's `avatarUnderBubble_mc` node per field (null = absent). */
+  private underBubbleNode = new Map<BubbleField, DisplayNode | null>();
   /** The open TankCreatorScreen (M4). */
   private creatorInstance: TankCreatorScreen | null = null;
 
@@ -116,7 +118,11 @@ export class GameWorld {
   /** Fired when the boss field is beaten (win screen is M5). */
   onBossDefeated: (() => void) | null = null;
   /** Sound sink wired by the Game (noop until assets load). */
-  soundSink: { play(cue: SoundCue): void } = { play: () => {} };
+  /** Sound sink: combat cues + the music track switch (menu/game). */
+  soundSink: { play(cue: SoundCue): void; music(track: "menu" | "game" | null): void } = {
+    play: () => {},
+    music: () => {},
+  };
 
   // Layer containers: fields append (next renders above current in transit),
   // the avatar renders above fields, the HUD above everything.
@@ -346,8 +352,43 @@ export class GameWorld {
       if (!this.jumping) this.exitViaNearestMarker(false);
     };
     this.fieldLayer.addChild(field.view);
+    this.underBubbleNode.set(field, this.findNamed(field.view, "avatarUnderBubble_mc"));
     return field;
   }
+
+  /** Depth-first search for a named art node (SWF placement names). */
+  private findNamed(root: DisplayNode, name: string): DisplayNode | null {
+    let found: DisplayNode | null = null;
+    root.forEachDepthFirst((n) => {
+      if (!found && n.getName() === name) found = n;
+    });
+    return found;
+  }
+
+  /**
+   * `avatarUnderBubble_mc` sizing/positioning (the original's `_-DF` sets the
+   * clip's width/height to the tank's diameter `_ -G9` and the world pins it
+   * to the avatar's field-local position each frame). Natural size comes
+   * from the SWF shape bounds — resolved through the subtree, since the
+   * named node is the wrapper sprite.
+   */
+  private syncAvatarUnderBubble(): void {
+    const node = this.underBubbleNode.get(this.currentField) ?? null;
+    if (!node) return;
+    let natural = 0;
+    node.forEachDepthFirst((n) => {
+      if (natural === 0 && n.naturalWidth > 0) natural = n.naturalWidth;
+    });
+    if (natural <= 0) return;
+    const diameter = this.avatar.radius * 2 * 1.35; // the bubble hugs the hull
+    const scale = diameter / natural;
+    node.scaleX = scale;
+    node.scaleY = scale;
+    node.x = this.avatar.x;
+    node.y = this.avatar.y;
+  }
+
+  /** Invariant: field view position = stage center − avatar field-local. */
 
   /** Invariant: field view position = stage center − avatar field-local. */
   private positionCurrentField(): void {
@@ -372,11 +413,13 @@ export class GameWorld {
   /** Main menu (`_-FF = 2`): Play/Continue + Settings. */
   showMainMenu(): void {
     if (this.menu) return;
+    this.soundSink.music("menu"); // Main.as:404 — menu shown → `_-Sr`
     const menu = new MainMenu(this.settings.value.SavedData, () => {
       this.view.removeChild(menu.view);
       this.menu = null;
       this.mode = WORLD_MODE.PLAYING;
       this.settings.save();
+      this.soundSink.music("game"); // Main.as:1119 — world created → `_-BY`
     }, this.settings);
     this.menu = menu;
     this.view.addChild(menu.view);
@@ -495,6 +538,7 @@ export class GameWorld {
     };
     // World-mode mirror (GetWState — the health readout hides bars in mode 3).
     this.currentField.worldMode = this.mode;
+    this.syncAvatarUnderBubble();
     // The avatar's view is stage-anchored via avatarView (set in setup);
     // syncView applies only the hull rotation to the tank's own node.
     switch (this.mode) {

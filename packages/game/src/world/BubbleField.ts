@@ -148,9 +148,14 @@ export class BubbleField implements FieldContext {
     (bullet as Bullet).active = true;
     this.bulletLayer.addChild(bullet.view);
     this.bullets.push(bullet as Bullet);
-    if (!(bullet as Bullet).isEnemy) {
-      this.sounds.play("shoot"); // throttled to once per 5 frames (docs 08 §2.5)
-      this.shootSoundTimer = 5;
+    // `_ -dH` fires only on ENEMY shots (`_-0D.as:1103`, `param8 == false`),
+    // rate-limited globally to once per 5 frames — the avatar's own cannon
+    // is silent in the original.
+    if ((bullet as Bullet).isEnemy) {
+      if (this.shootSoundTimer <= 0) {
+        this.sounds.play("shoot");
+        this.shootSoundTimer = 5;
+      }
     }
   }
 

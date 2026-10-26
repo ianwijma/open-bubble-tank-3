@@ -27,50 +27,180 @@ import {
   type SwfAssetBundle,
 } from "@open-bt3/game";
 
-/** Sound cue → ExportAssets name (docs 09-audio-effects.md §6). */
+/** Sound cue → sound-class name (docs 09 §2.2). The original binds its
+ * MP3s to AS3 Sound classes via SymbolClass (`_-dH` → cid 561 etc.) — the
+ * file has NO ExportAssets entries. Names are stored space-stripped. */
 const CUE_SYMBOLS: Partial<Record<SoundCue, string>> = {
-  shoot: "_ -dH",
-  hit: "_ -49",
-  avatarHit: "_ -JV",
-  collect: "_ -Fe",
-  enemyDeath: "_ -AH",
-  allyDeath: "_ -9w",
-  pop: "_ -6j",
+  shoot: "_-dH", // enemy weapon fire (the avatar's cannon is silent)
+  hit: "_-49",
+  avatarHit: "_-JV",
+  collect: "_-Fe",
+  enemyDeath: "_-AH", // intType 3 destroyed (_-Zx.as:997)
+  allyDeath: "_-9w", // intType 2 destroyed (_-Zx.as:992)
+  pop: "_-aa", // no `_-6j` class exists; the heavy hit sample stands in
 };
 
-/** WebAudio sink — resolves cues through the SWF's ExportAssets map. */
+const MUSIC_SYMBOLS = { menu: "_-Sr", game: "_-BY" } as const;
+const MUSIC_VOLUME = 0.8; // Main._-RO(_, 0.8)
+
+/** WebAudio sink — resolves cues through the SWF's SymbolClass map, falls
+ * back to tiny synthesized cues when no SWF is loaded, and loops the game's
+ * two music tracks. */
 class SwfSoundSink {
   private buffers = new Map<SoundCue, AudioBuffer>();
+  private musicBuffers = new Map<"menu" | "game", AudioBuffer>();
   private ctx: AudioContext | null = null;
+  private musicSource: AudioBufferSourceNode | null = null;
+  private musicGain: GainNode | null = null;
+  private currentTrack: "menu" | "game" | null = null;
+  /** The track the world wants; resumed when music is re-enabled. */
+  pendingTrack: "menu" | "game" | null = null;
+  private noise: AudioBuffer | null = null;
   enabled = true;
+  musicEnabled = true;
 
   async load(bundle: SwfAssetBundle): Promise<void> {
     const Ctx = window.AudioContext;
     if (!Ctx) return;
     this.ctx = new Ctx();
+    const resolve = (name: string): number | undefined =>
+      bundle.exportedNames.get(name) ?? bundle.symbolByName.get(name);
     for (const [cue, name] of Object.entries(CUE_SYMBOLS) as [SoundCue, string][]) {
-      const cid = bundle.exportedNames.get(name) ?? bundle.exportedNames.get(name.replace(" ", ""));
+      const cid = resolve(name);
       if (cid === undefined) continue;
       const sound = bundle.sounds.get(cid);
       if (!sound?.blob || sound.unsupported) continue;
       try {
         this.buffers.set(cue, await this.ctx.decodeAudioData(await sound.blob.arrayBuffer()));
       } catch {
-        /* undecodable sound — skip the cue */
+        /* undecodable sound — the synth fallback covers the cue */
       }
     }
+    for (const [track, name] of Object.entries(MUSIC_SYMBOLS) as ["menu" | "game", string][]) {
+      const cid = resolve(name);
+      if (cid === undefined) continue;
+      const sound = bundle.sounds.get(cid);
+      if (!sound?.blob || sound.unsupported) continue;
+      try {
+        this.musicBuffers.set(track, await this.ctx.decodeAudioData(await sound.blob.arrayBuffer()));
+      } catch {
+        /* no music for this track */
+      }
+    }
+    // the world may have requested a track while the decodes were still
+    // running (the menu music races this whole async load) — start it now
+    if (this.pendingTrack && this.musicEnabled) {
+      this.currentTrack = null;
+      this.music(this.pendingTrack);
+    }
+  }
+
+  private ensureCtx(): AudioContext | null {
+    if (this.ctx) return this.ctx;
+    const Ctx = window.AudioContext;
+    if (!Ctx) return null;
+    this.ctx = new Ctx();
+    return this.ctx;
   }
 
   play(cue: SoundCue): void {
     if (!this.enabled) return;
-    const buffer = this.buffers.get(cue);
-    const ctx = this.ctx;
-    if (!buffer || !ctx) return;
+    const ctx = this.ensureCtx();
+    if (!ctx) return;
     if (ctx.state === "suspended") void ctx.resume();
+    const buffer = this.buffers.get(cue);
+    if (buffer) {
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start();
+      return;
+    }
+    this.synth(ctx, cue); // no-asset fallback: a basic synthesized cue
+  }
+
+  /** `MusicPlayer` stand-in: loop the menu/game track at 0.8 (docs 09 §2.3). */
+  music(track: "menu" | "game" | null): void {
+    this.pendingTrack = track;
+    if (this.currentTrack === track) return;
+    this.currentTrack = track;
+    const ctx = this.ensureCtx();
+    if (!ctx) return;
+    this.musicSource?.stop();
+    this.musicSource = null;
+    if (!track || !this.musicEnabled) return;
+    if (ctx.state === "suspended") void ctx.resume();
+    const buffer = this.musicBuffers.get(track);
+    if (!buffer) return; // no-asset path: no synthesized music (cues only)
     const source = ctx.createBufferSource();
     source.buffer = buffer;
-    source.connect(ctx.destination);
+    source.loop = true;
+    const gain = ctx.createGain();
+    gain.gain.value = MUSIC_VOLUME;
+    source.connect(gain).connect(ctx.destination);
     source.start();
+    this.musicSource = source;
+    this.musicGain = gain;
+  }
+
+  /** Tiny synthesized stand-ins so the no-asset build still has sound. */
+  private synth(ctx: AudioContext, cue: SoundCue): void {
+    const t = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    const tone = (type: OscillatorType, f0: number, f1: number, dur: number, vol: number): void => {
+      const osc = ctx.createOscillator();
+      osc.type = type;
+      osc.frequency.setValueAtTime(f0, t);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+      gain.gain.setValueAtTime(vol, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(gain);
+      osc.start(t);
+      osc.stop(t + dur);
+    };
+    const burst = (dur: number, vol: number): void => {
+      if (!this.noise) {
+        const len = Math.floor(ctx.sampleRate * 0.5);
+        this.noise = ctx.createBuffer(1, len, ctx.sampleRate);
+        const data = this.noise.getChannelData(0);
+        for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = this.noise;
+      gain.gain.setValueAtTime(vol, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(gain);
+      src.start(t);
+      src.stop(t + dur);
+    };
+    switch (cue) {
+      case "shoot":
+        tone("square", 620, 180, 0.08, 0.05);
+        break;
+      case "hit":
+        burst(0.05, 0.07);
+        break;
+      case "avatarHit":
+        tone("sawtooth", 160, 60, 0.18, 0.1);
+        break;
+      case "collect":
+        tone("sine", 520, 1040, 0.12, 0.07);
+        break;
+      case "enemyDeath":
+        burst(0.35, 0.16);
+        tone("sine", 110, 40, 0.35, 0.12);
+        break;
+      case "allyDeath":
+        burst(0.6, 0.2);
+        tone("sine", 80, 30, 0.6, 0.14);
+        break;
+      case "pop":
+        tone("sine", 300, 90, 0.06, 0.08);
+        break;
+      default:
+        tone("sine", 400, 200, 0.1, 0.05);
+    }
   }
 }
 
@@ -106,7 +236,10 @@ export default function Home() {
     // mid-game land here via the retained bundle ref.
     if (bundleRef.current) void sink.load(bundleRef.current);
     const world = new GameWorld();
-    world.soundSink = { play: (cue) => sink.play(cue) };
+    world.soundSink = {
+      play: (cue) => sink.play(cue),
+      music: (track) => sink.music(track),
+    };
     world.onQuit = () => {
       // Quit Playing (docs 04 §5.1): tear down and return to the main menu.
       gameRef.current?.loop.stop();
@@ -126,6 +259,12 @@ export default function Home() {
         // settings live-apply (fps + audio)
         loop.setFps(world.settings.value.f);
         sink.enabled = world.settings.value.s;
+        const musicWanted = world.settings.value.m;
+        if (sink.musicEnabled !== musicWanted) {
+          sink.musicEnabled = musicWanted;
+          if (!musicWanted) sink.music(null);
+          else sink.music(sink.pendingTrack);
+        }
         // screen-fx decay (shake consumed by the render below)
         world.screenFx.shake = Math.max(0, world.screenFx.shake - 0.8);
         world.screenFx.flash = Math.max(0, world.screenFx.flash - 0.06);
