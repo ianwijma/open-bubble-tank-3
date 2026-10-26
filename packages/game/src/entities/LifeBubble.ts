@@ -89,15 +89,25 @@ export class LifeBubble {
 
 function drawLifeBubble(ctx: CanvasRenderingContext2D, amount: number): void {
   const r = amount >= LIFE_BUBBLE_LARGE ? 14 : amount >= LIFE_BUBBLE_MEDIUM ? 9 : 5.5;
+  // Sampled from the original's bubble sprites: 1/5-life are solid blue
+  // (#305bcf, _-Bd/_-Oh), the 50-life is light blue (#bce5f8, _-5A); all
+  // carry a white rim.
+  const large = amount >= LIFE_BUBBLE_LARGE;
   const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
-  grad.addColorStop(0, "rgba(235,255,225,0.95)");
-  grad.addColorStop(0.5, "rgba(120,240,120,0.85)");
-  grad.addColorStop(1, "rgba(20,140,40,0.6)");
+  if (large) {
+    grad.addColorStop(0, "rgba(255,255,255,0.9)");
+    grad.addColorStop(0.45, "rgba(188,229,248,0.95)");
+    grad.addColorStop(1, "rgba(133,202,243,0.9)");
+  } else {
+    grad.addColorStop(0, "rgba(140,170,240,0.9)");
+    grad.addColorStop(0.45, "rgba(48,91,207,0.95)");
+    grad.addColorStop(1, "rgba(34,66,158,0.95)");
+  }
   ctx.fillStyle = grad;
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "rgba(10,80,20,0.5)";
+  ctx.strokeStyle = "rgba(249,250,254,0.75)";
   ctx.lineWidth = 1;
   ctx.stroke();
 }

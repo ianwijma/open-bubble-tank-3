@@ -563,43 +563,44 @@ export function makePartView(detail: TankDetail): DisplayNode {
   return proceduralPartView(detail);
 }
 
-/** Procedural part view — a radial-gradient bubble (the original parts are
- * exactly that). */
+/**
+ * Procedural part view — a bubble shaded with the original's sampled part
+ * palette (center colors read from the exported sprite renders):
+ * standard bodies #0781b4, dark #05638b, light #32aae4, guns #d2a800.
+ */
 function proceduralPartView(detail: TankDetail): DisplayNode {
   const node = new DisplayNode((ctx) => {
     const r = Math.max(2, detail.radius * detail.scale);
     const { type } = detail;
-    const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.15, 0, 0, r);
-    if (type >= 1000 && type <= 1999) {
-      // Bodies: classic blue bubble.
-      grad.addColorStop(0, "rgba(255,255,255,0.95)");
-      grad.addColorStop(0.45, "rgba(140,205,255,0.8)");
-      grad.addColorStop(1, "rgba(40,110,200,0.55)");
-    } else if (type >= 2000 && type <= 3999) {
-      // Guns: warm amber.
-      grad.addColorStop(0, "rgba(255,240,200,0.95)");
-      grad.addColorStop(0.45, "rgba(255,190,110,0.85)");
-      grad.addColorStop(1, "rgba(200,110,30,0.6)");
-    } else {
-      // Interfaces/passives: violet.
-      grad.addColorStop(0, "rgba(240,220,255,0.95)");
-      grad.addColorStop(0.45, "rgba(200,150,255,0.85)");
-      grad.addColorStop(1, "rgba(120,60,210,0.6)");
+    // per-family base/edge colors
+    let base = "#0781b4";
+    let edge = "#05638b";
+    if (type >= 1100 && type <= 1199) {
+      base = "#05638b";
+      edge = "#034a68";
+    } else if (type >= 1200 && type <= 1299) {
+      base = "#32aae4";
+      edge = "#1d7db3";
+    } else if (type >= 1500 && type <= 1599) {
+      base = "#05638b";
+      edge = "#034a68";
+    } else if (type >= 2000 && type <= 4999) {
+      // Guns (avatar 2xxx/3xxx, enemy 4xxx): sampled gold #d2a800.
+      base = "#d2a800";
+      edge = "#9a7a00";
     }
+    const grad = ctx.createRadialGradient(-r * 0.32, -r * 0.38, r * 0.12, 0, 0, r);
+    grad.addColorStop(0, "rgba(255,255,255,0.8)");
+    grad.addColorStop(0.35, base);
+    grad.addColorStop(1, edge);
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "rgba(20,40,80,0.35)";
-    ctx.lineWidth = 1;
+    // The bubbles' light rim (reads against the dark water).
+    ctx.strokeStyle = "rgba(235,248,252,0.45)";
+    ctx.lineWidth = 1.25;
     ctx.stroke();
-    // Tiny barrel nub for weapons so firing direction reads visually.
-    if (type >= 2000 && type <= 3999) {
-      ctx.fillStyle = "rgba(255,255,255,0.75)";
-      ctx.beginPath();
-      ctx.arc(r * 0.55, 0, r * 0.22, 0, Math.PI * 2);
-      ctx.fill();
-    }
   }, `part${detail.type}`);
   node.x = detail.x;
   node.y = detail.y;

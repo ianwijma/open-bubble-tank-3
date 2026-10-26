@@ -134,6 +134,8 @@ export default function Home() {
         // The backing store is 2× (crisp text on hidpi); the stage draws in
         // 550×450 coordinates, so the 2× device scale must be applied.
         ctx.setTransform(2, 0, 0, 2, 0, 0);
+        // stage.quality (LOW/MEDIUM/HIGH) maps to canvas smoothing.
+        ctx.imageSmoothingEnabled = world.settings.value.q !== "LOW";
         ctx.fillStyle = STAGE_COLOR;
         ctx.fillRect(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
         const fx = world.screenFx;
@@ -245,7 +247,7 @@ export default function Home() {
                 onClick={startGame}
                 className="rounded bg-slate-700/60 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-600/70"
               >
-                Start without SWF
+                {bundleName ? "Start (original art loaded)" : "Start without SWF"}
               </button>
             </div>
             {loadError ? <p className="text-sm text-rose-300">SWF load failed: {loadError}</p> : null}

@@ -25,8 +25,8 @@ function startPlaying(): GameWorld {
   world.setup();
   world.showMainMenu();
   world.run(idle());
-  world.run({ ...idle(), mouseX: 275, mouseY: 232, mouseDown: true }); // Play down
-  world.run({ ...idle(), mouseX: 275, mouseY: 232 }); // release
+  world.run({ ...idle(), mouseX: 275, mouseY: 212, mouseDown: true }); // Play down
+  world.run({ ...idle(), mouseX: 275, mouseY: 212 }); // release
   expect(world.menu).toBeNull();
   expect(world.mode).toBe(WORLD_MODE.PLAYING);
   return world;

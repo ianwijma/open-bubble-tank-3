@@ -24,22 +24,22 @@ export function makeBubblefieldArt(scale: number): DisplayNode | null {
 export function makeFieldBackground(scale: number): DisplayNode {
   const r = FIELD_RADIUS * scale;
   const node = new DisplayNode((ctx) => {
-    // Deep-water glow: light center → tinted rim (matches the original's blue field).
-    const grad = ctx.createRadialGradient(0, 0, r * 0.05, 0, 0, r);
-    grad.addColorStop(0, "rgba(150,210,255,0.5)");
-    grad.addColorStop(0.55, "rgba(90,160,230,0.38)");
-    grad.addColorStop(0.92, "rgba(40,100,190,0.32)");
-    grad.addColorStop(1, "rgba(20,60,140,0.05)");
+    // Sampled from the original's Bubblefield render (sprite 1551): the
+    // interior is fully transparent — the stage's #142b2c shows through —
+    // and only the outer ~28% of the radius carries a soft light-blue ring
+    // that rises to near-white at the very edge.
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    grad.addColorStop(0, "rgba(193,231,249,0)");
+    grad.addColorStop(0.7, "rgba(193,231,249,0)");
+    grad.addColorStop(0.75, "rgba(179,230,255,0.04)");
+    grad.addColorStop(0.85, "rgba(191,228,248,0.44)");
+    grad.addColorStop(0.92, "rgba(193,231,249,0.71)");
+    grad.addColorStop(0.97, "rgba(193,231,251,0.9)");
+    grad.addColorStop(1, "rgba(242,249,254,0.99)");
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fill();
-    // Rim line.
-    ctx.strokeStyle = "rgba(120,190,255,0.5)";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.stroke();
   }, "fieldBG");
   node.scaleX = scale;
   node.scaleY = scale;

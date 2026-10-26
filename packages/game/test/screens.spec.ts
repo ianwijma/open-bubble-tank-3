@@ -19,8 +19,8 @@ describe("M5 screens flow", () => {
     world.run(idle()); // the world does not tick behind the menu
     expect(world.avatar.intTankLife).toBe(lifeBefore);
     // click Play (button at stage center ±90, y 210-254)
-    world.run(click(275, 232));
-    world.run(release(275, 232));
+    world.run(click(275, 212));
+    world.run(release(275, 212));
     expect(world.menu).toBeNull();
     expect(world.mode).toBe(WORLD_MODE.PLAYING);
   });
