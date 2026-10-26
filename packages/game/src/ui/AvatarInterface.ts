@@ -64,6 +64,10 @@ export class AvatarInterface {
 
   /** `blnStopShoot` — blocks firing during jumps/menus. */
   blnStopShoot = false;
+  /** `blnMoveAvatar` (`_-4v`) — gates MoveAvatar: the world disables it at
+   * jump start and re-enables on arrival (BTAGameWorld.as:678/1212). While
+   * false the velocity model keeps updating but is not applied. */
+  blnMoveAvatar = true;
 
   // --- shared secondary cooldown (`_-dJ`/`_-DR`/`_-34`) ---
   private secondaryMax = SECONDARY_COOLDOWN_DEFAULT;
@@ -192,11 +196,13 @@ export class AvatarInterface {
    * `MoveAvatar` — the world scrolls opposite the velocity; the avatar's
    * field-local position integrates the velocity directly (the two views of
    * the same motion), so the avatar stays stage-centered while the field
-   * slides by −v.
+   * slides by −v. Gated by `blnMoveAvatar` (`_-4v`): the world's transit
+   * step owns the motion during jumps (the original applies nothing then —
+   * only the velocity model keeps updating).
    */
   private moveAvatar(): void {
     const avatar = this.avatar;
-    if (!avatar) return;
+    if (!avatar || !this.blnMoveAvatar) return;
     avatar.x += this.vx;
     avatar.y += this.vy;
     this.adjustWorld(this.vx, this.vy);
