@@ -23,7 +23,8 @@ import {
   WEAKEN_FRAMES,
 } from "../core/constants";
 import { distSqrd } from "../core/math";
-import { getCategory, getClassData } from "../data/parts";
+import { getCategory, getClassData, getPart } from "../data/parts";
+import { getArtStore } from "../assets/swf/art";
 import type { TankData, TankDetail } from "../tanks/TankData";
 import type { EffectRequest, FieldContext, TankLike } from "./field-context";
 import type { BehaviorPart } from "./weapons/guns";
@@ -215,10 +216,15 @@ export class Tank implements TankLike {
     }
   }
 
-  /** Mirror entity state onto the display node. */
+  /** Mirror entity state onto the display node. The avatar's clip stays
+   * pinned at the stage center (docs 03 §4b: the world slides, the avatar
+   * clip does not) — its logical x/y is field-local hit-test bookkeeping
+   * only, so only enemies mirror position onto the view. */
   protected syncView(): void {
-    this.view.x = this.x;
-    this.view.y = this.y;
+    if (!this.isAvatar) {
+      this.view.x = this.x;
+      this.view.y = this.y;
+    }
     this.view.rotation = this.rotation;
   }
 
@@ -525,10 +531,41 @@ export class Tank implements TankLike {
 export const TANK_STATE = { IDLE: 0, ACTIVE: 1, STUNNED: 2, DEAD: 3 } as const;
 
 /**
- * Procedural part view — a radial-gradient bubble (the original parts are
- * exactly that). Replaced by symbol art from the SWF pipeline in M2/M3.
+ * Part view — real symbol art from the loaded SWF when available
+ * (SymbolClass `claType` → character id), else the procedural
+ * radial-gradient bubble fallback.
  */
 export function makePartView(detail: TankDetail): DisplayNode {
+  try {
+    const art = getArtStore();
+    if (art) {
+      const claType = getPart(detail.type)?.claType;
+      const cid = art.cidForClaType(claType);
+      if (cid !== null) {
+        const symbol = art.instantiate(cid);
+        if (symbol) {
+          // the art is authored at the part's nominal size; scale to the row's
+          // scale, and keep the detail's mounting transform
+          symbol.scaleX *= detail.scale;
+          symbol.scaleY *= detail.scale;
+          symbol.x = detail.x;
+          symbol.y = detail.y;
+          symbol.rotation = detail.rotation;
+          symbol.setName(detail.name);
+          return symbol;
+        }
+      }
+    }
+  } catch {
+    // malformed symbol data must never take the world build down — the
+    // procedural fallback keeps the game playable (ledger note)
+  }
+  return proceduralPartView(detail);
+}
+
+/** Procedural part view — a radial-gradient bubble (the original parts are
+ * exactly that). */
+function proceduralPartView(detail: TankDetail): DisplayNode {
   const node = new DisplayNode((ctx) => {
     const r = Math.max(2, detail.radius * detail.scale);
     const { type } = detail;

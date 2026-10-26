@@ -138,6 +138,10 @@ export class GameWorld {
     this.avatar.onAvatarDeathJump = () => this.deathJump();
     this.currentAvatarCode = this.avatar.data.strTankCode;
 
+    // Stage anchor (docs 03 §4b): the avatar clip stays at the stage center
+    // while the world slides underneath; the tank's own view only rotates.
+    this.avatarView.x = STAGE_CENTER_X;
+    this.avatarView.y = STAGE_CENTER_Y;
     this.avatarView.addChild(this.avatar.view);
     this.hud.setup(this.avatar, (vx, vy) => this.adjustBubblefieldObjects(vx, vy));
     this.hud.onOpenUpgradeMenu = () => this.openUpgradeMenu();
@@ -481,10 +485,8 @@ export class GameWorld {
     };
     // World-mode mirror (GetWState — the health readout hides bars in mode 3).
     this.currentField.worldMode = this.mode;
-    // The avatar's view is stage-anchored: always at center, rotated with the hull.
-    this.avatar.view.x = STAGE_CENTER_X;
-    this.avatar.view.y = STAGE_CENTER_Y;
-    this.avatar.view.rotation = this.avatar.rotation;
+    // The avatar's view is stage-anchored via avatarView (set in setup);
+    // syncView applies only the hull rotation to the tank's own node.
     switch (this.mode) {
       case WORLD_MODE.PLAYING:
         this.checkExitTrigger();

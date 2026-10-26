@@ -270,22 +270,27 @@ export function parseShapeRecords(
         } else {
           dx = br.sb(n); // horizontal
         }
+        // the run's start is the pen position BEFORE its first op — capture
+        // it before advancing (the research extractor captured it after,
+        // which dropped each run's first stroke segment)
+        const run = ensure();
         cx += dx;
         cy += dy;
-        ensure().ops.push({ t: "L", x: cx, y: cy });
+        run.ops.push({ t: "L", x: cx, y: cy });
       } else {
         const n = br.ub(4) + 2;
         const cX = br.sb(n);
         const cY = br.sb(n);
         const aX = br.sb(n);
         const aY = br.sb(n);
+        const run = ensure();
         cx += cX;
         cy += cY;
         const qx = cx;
         const qy = cy;
         cx += aX;
         cy += aY;
-        ensure().ops.push({ t: "Q", cx: qx, cy: qy, x: cx, y: cy });
+        run.ops.push({ t: "Q", cx: qx, cy: qy, x: cx, y: cy });
       }
     } else {
       // style change or end

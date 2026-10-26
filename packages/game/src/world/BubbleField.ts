@@ -10,7 +10,7 @@
 import { AREA_RANGE_MULT, FIELD_RADIUS } from "../core/constants";
 import { DisplayNode } from "../core/DisplayNode";
 import { randInt } from "../core/math";
-import { makeExitMarkers, makeFieldBackground } from "../render/art/FieldArt";
+import { makeBubblefieldArt, makeExitMarkers, makeFieldBackground } from "../render/art/FieldArt";
 import type { EffectRequest, FieldContext, SoundCue, TankLike } from "../entities/field-context";
 import type { FieldBullet } from "../entities/field-context";
 import { LifeBubble } from "../entities/LifeBubble";
@@ -104,8 +104,15 @@ export class BubbleField implements FieldContext {
     this.view.addChild(this.bulletLayer);
     this.view.addChild(this.topEffectLayer);
 
-    this.bgLayer.addChild(makeFieldBackground(this.scale));
-    this.bgLayer.addChild(makeExitMarkers(this.scale));
+    // Real `Bubblefield` symbol art (bg + exit markers) when a SWF is loaded;
+    // the procedural fallback otherwise.
+    const bubblefieldArt = makeBubblefieldArt(this.scale);
+    if (bubblefieldArt) {
+      this.bgLayer.addChild(bubblefieldArt);
+    } else {
+      this.bgLayer.addChild(makeFieldBackground(this.scale));
+      this.bgLayer.addChild(makeExitMarkers(this.scale));
+    }
     this.sounds = { play: () => {} };
   }
 

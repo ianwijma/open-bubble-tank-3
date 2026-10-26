@@ -19,8 +19,10 @@ import {
   STAGE_COLOR,
   STAGE_HEIGHT,
   STAGE_WIDTH,
+  SwfArtStore,
   loadSwfAssets,
   renderTree,
+  setArtStore,
   type SoundCue,
   type SwfAssetBundle,
 } from "@open-bt3/game";
@@ -122,10 +124,13 @@ export default function Home() {
         world.screenFx.flash = Math.max(0, world.screenFx.flash - 0.06);
       },
       render: () => {
-        ctx.save();
+        // The backing store is 2× (crisp text on hidpi); the stage draws in
+        // 550×450 coordinates, so the 2× device scale must be applied.
+        ctx.setTransform(2, 0, 0, 2, 0, 0);
         ctx.fillStyle = STAGE_COLOR;
         ctx.fillRect(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
         const fx = world.screenFx;
+        ctx.save();
         if (fx.shake > 0 && world.settings.value.ss) {
           ctx.translate((Math.random() - 0.5) * fx.shake, (Math.random() - 0.5) * fx.shake);
         }
@@ -157,14 +162,25 @@ export default function Home() {
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const bundle = await loadSwfAssets(bytes, (line) => console.log(`[swf] ${line}`));
-      if (gameRef.current) await gameRef.current.sink.load(bundle);
+      // Install the parsed art: parts/fields/bullets rebuild through the
+      // SymbolClass map on the next world construction.
+      setArtStore(new SwfArtStore(bundle));
+      if (gameRef.current) {
+        // A mid-game load restarts the world so every view rebuilds with
+        // the real art (the boot flow loads before Start, so this is the
+        // rare path).
+        gameRef.current.loop.stop();
+        gameRef.current = null;
+        startGame();
+      }
+      await gameRef.current?.sink.load(bundle);
       setBundleName(file.name);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [startGame]);
 
   // Drag & drop on the whole window.
   useEffect(() => {

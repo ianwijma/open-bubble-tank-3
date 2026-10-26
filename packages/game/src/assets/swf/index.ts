@@ -53,6 +53,7 @@ import {
 export * from "./bitReader";
 export { decompressSWF, iterTags, readHeader, TAG_NAMES } from "./container";
 export type { DecompressedSwf, SwfHeaderInfo, SwfTag } from "./container";
+export * from "./art";
 export * from "./images";
 export * from "./sounds";
 export * from "./shapes";
