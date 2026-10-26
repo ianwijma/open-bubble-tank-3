@@ -47,6 +47,8 @@ export interface UpgradeMenuContext {
   grantTierUnlocks(level: number): void;
   /** `ViewerUp` apply: fade-out finished → replace the avatar (slot overwrite). */
   applyChoice(code: string): void;
+  /** `EditTank` — open the TankCreatorScreen seeded with the current avatar. */
+  editCurrentTank(): void;
 }
 
 interface MenuSlot {
@@ -226,6 +228,16 @@ export class UpgradeMenu {
     const released = !input.mouseDown && this.prevMouseDown;
     this.prevMouseDown = input.mouseDown;
 
+    // footer "Edit" hit region (TankCreatorScreen path, docs 04 §4.4)
+    if (released && this.chosenIndex === -1) {
+      const editX0 = STAGE_WIDTH / 2 - 158;
+      if (input.mouseY >= STAGE_HEIGHT - 34 && input.mouseY <= STAGE_HEIGHT - 12 && input.mouseX >= editX0 && input.mouseX <= editX0 + 30) {
+        this.context?.editCurrentTank();
+        this.closed = true;
+        return;
+      }
+    }
+
     if (this.chosenIndex === -1) {
       // clickable region: the viewer box plus its label column
       const y0 = 88 - CARD_H / 2;
@@ -324,11 +336,14 @@ export class UpgradeMenu {
       ctx.fillText(`Passive: ${slot.passive}`, lx, ly, CARD_W);
     }
 
-    // M4/M5 stub footer (stubs ledger): creator / viewer / parts pack
+    // footer: Edit is live (opens the TankCreatorScreen); Search / Parts
+    // Pack remain M4/M5 stubs (stubs ledger)
     ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(223,243,245,0.4)";
     ctx.font = "11px system-ui, sans-serif";
-    ctx.fillText("Edit · Search · Parts Pack — arriving with the tank creator (M4/M5)", STAGE_WIDTH / 2, STAGE_HEIGHT - 24);
+    ctx.fillStyle = "#9fe8f0";
+    ctx.fillText("Edit", STAGE_WIDTH / 2 - 143, STAGE_HEIGHT - 24);
+    ctx.fillStyle = "rgba(223,243,245,0.4)";
+    ctx.fillText("· Search · Parts Pack — arriving with M4/M5", STAGE_WIDTH / 2 + 46, STAGE_HEIGHT - 24);
 
     ctx.textAlign = "left";
     ctx.restore();

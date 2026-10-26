@@ -205,6 +205,13 @@ export { AvatarInterface, roundRect } from "./ui/AvatarInterface";
 export type { AdjustWorldFn } from "./ui/AvatarInterface";
 export { UpgradeMenu, describeTankParts } from "./ui/UpgradeMenu";
 export type { UpgradeMenuContext } from "./ui/UpgradeMenu";
+export { TankCreatorScreen } from "./ui/TankCreator";
+export type { TankCreatorOptions } from "./ui/TankCreator";
+export { TankCreator } from "./tanks/creator";
+export type { CreatorPart, CreatorBudget, DerivedStats } from "./tanks/creator";
+export { PlayerProfile, SettingsStore, compressToBase64, decompressFromBase64, sentinelRow } from "./data/profile";
+export type { PersistedSettings, TankRow } from "./data/profile";
+export { DEFAULT_HOTKEYS } from "./data/profile";
 
 // ---------------------------------------------------------------- render
 export { renderTree } from "./render/Renderer";
