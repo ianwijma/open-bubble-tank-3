@@ -72,12 +72,6 @@ class SwfSoundSink {
   }
 }
 
-/** Screen-fx state the render applies (shake offset + white flash). */
-interface ScreenFx {
-  shake: number;
-  flash: number;
-}
-
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -92,7 +86,6 @@ export default function Home() {
     input: Input;
     data: GameData;
     sink: SwfSoundSink;
-    fx: ScreenFx;
   } | null>(null);
 
   const startGame = useCallback(() => {
@@ -103,7 +96,6 @@ export default function Home() {
 
     const data = new GameData();
     const sink = new SwfSoundSink();
-    const fx: ScreenFx = { shake: 0, flash: 0 };
     const world = new GameWorld();
     world.soundSink = { play: (cue) => sink.play(cue) };
     world.onQuit = () => {
@@ -122,17 +114,19 @@ export default function Home() {
       fps: data.settings.fps ?? world.settings.value.f,
       update: () => {
         world.run(input.snapshot());
-        // settings live-apply (fps + audio + shake gate)
+        // settings live-apply (fps + audio)
         loop.setFps(world.settings.value.f);
         sink.enabled = world.settings.value.s;
-        if (fx.shake > 0) fx.shake = Math.max(0, fx.shake - 0.8);
-        if (fx.flash > 0) fx.flash = Math.max(0, fx.flash - 0.06);
+        // screen-fx decay (shake consumed by the render below)
+        world.screenFx.shake = Math.max(0, world.screenFx.shake - 0.8);
+        world.screenFx.flash = Math.max(0, world.screenFx.flash - 0.06);
       },
       render: () => {
         ctx.save();
         ctx.fillStyle = STAGE_COLOR;
         ctx.fillRect(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
-        if (fx.shake > 0) {
+        const fx = world.screenFx;
+        if (fx.shake > 0 && world.settings.value.ss) {
           ctx.translate((Math.random() - 0.5) * fx.shake, (Math.random() - 0.5) * fx.shake);
         }
         renderTree(ctx, world.view);
@@ -143,34 +137,9 @@ export default function Home() {
         }
       },
     });
-    // screen-fx sink → the render state above
-    world.currentField.screen.shake = (m: number) => {
-      if (world.settings.value.ss) fx.shake = Math.max(fx.shake, m);
-    };
-    world.currentField.screen.flash = () => {
-      fx.flash = Math.max(fx.flash, 0.5);
-    };
     loop.start();
-    gameRef.current = { world, loop, input, data, sink, fx };
+    gameRef.current = { world, loop, input, data, sink };
     setPhase("running");
-  }, []);
-
-  // Re-wire the screen-fx sink after every jump (fields are recreated).
-  useEffect(() => {
-    const id = setInterval(() => {
-      const game = gameRef.current;
-      if (!game) return;
-      const field = game.world.currentField;
-      if (field.screen.shake.length === 0) {
-        field.screen.shake = (m: number) => {
-          if (game.world.settings.value.ss) game.fx.shake = Math.max(game.fx.shake, m);
-        };
-        field.screen.flash = () => {
-          game.fx.flash = Math.max(game.fx.flash, 0.5);
-        };
-      }
-    }, 500);
-    return () => clearInterval(id);
   }, []);
 
   // Teardown on unmount (dev strict-mode double mount).

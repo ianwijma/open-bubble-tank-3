@@ -107,6 +107,8 @@ export class GameWorld {
   onQuit: (() => void) | null = null;
   /** Tanks-defeated counter for the win screen (docs 03 §3 stat). */
   tanksDefeated = 0;
+  /** Screen-fx sink the app consumes (shake magnitude / flash pulse). */
+  screenFx: { shake: number; flash: number } = { shake: 0, flash: 0 };
   private prevPauseKey = false;
 
   /** Fired when the boss field is beaten (win screen is M5). */
@@ -319,6 +321,13 @@ export class GameWorld {
   private makeField(options: { scale: number; col: number; row: number }): BubbleField {
     const field = new BubbleField(options);
     field.sounds = this.soundSink;
+    // screen-fx sink → the world-level state (the app render consumes it)
+    field.screen.shake = (m: number) => {
+      this.screenFx.shake = Math.max(this.screenFx.shake, m);
+    };
+    field.screen.flash = () => {
+      this.screenFx.flash = Math.max(this.screenFx.flash, 0.5);
+    };
     field.onCompleted = (completed) => {
       if (completed.isBossField) {
         this.tanksDefeated++;
