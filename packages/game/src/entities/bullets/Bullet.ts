@@ -15,6 +15,22 @@ import { DisplayNode } from "../../core/DisplayNode";
 import { BULLET_WALL_RADIUS_SQ, FIELD_RADIUS } from "../../core/constants";
 import { atan2Deg } from "../../core/math";
 import type { EffectRequest, FieldBullet, FieldContext, TankLike } from "../field-context";
+import { getArtStore } from "../../assets/swf/art";
+
+/** Draw a DisplayNode subtree directly (shared with the screens' painters). */
+export function drawNodeTree(ctx: CanvasRenderingContext2D, node: DisplayNode): void {
+  ctx.save();
+  ctx.translate(node.x, node.y);
+  if (node.rotation !== 0) ctx.rotate((node.rotation * Math.PI) / 180);
+  ctx.scale(node.scaleX, node.scaleY);
+  if (node.alpha !== 1) ctx.globalAlpha *= Math.max(0, Math.min(1, node.alpha));
+  node.draw?.(ctx);
+  for (let i = 0; i < node.getChildCount(); i++) {
+    const child = node.getChildAt(i);
+    if (child) drawNodeTree(ctx, child);
+  }
+  ctx.restore();
+}
 
 export interface BulletOptions {
   scale?: number;
@@ -28,6 +44,8 @@ export interface BulletOptions {
   rotateTowardTarget?: boolean;
   /** Radius of the bullet art at scale 1 (hitbox; parts use their detail radii). */
   bulletRadius?: number;
+  /** SWF symbol class for the art pipeline (`_-U7`, `_-GV`, …). */
+  claType?: string;
 }
 
 export abstract class Bullet implements FieldBullet {
@@ -70,6 +88,8 @@ export abstract class Bullet implements FieldBullet {
   readonly seeker: boolean;
   readonly destroyable: boolean;
   readonly rotateTowardTarget: boolean;
+  /** SWF symbol class for the art pipeline (set by skins). */
+  claType = "";
 
   constructor(x: number, y: number, rotation: number, speed: number, damage: number, options: BulletOptions = {}) {
     this.x = x;
@@ -288,8 +308,25 @@ export abstract class Bullet implements FieldBullet {
     field.addEffect(request);
   }
 
-  /** Subclass art hook (default: plain bubble shell). */
+  /** Subclass art hook: SWF symbol art when loaded, else the procedural shell. */
   protected drawBullet(ctx: CanvasRenderingContext2D): void {
+    try {
+      const art = getArtStore();
+      if (art && this.claType) {
+        const cid = art.cidForClaType(this.claType);
+        if (cid !== null) {
+          const symbol = art.instantiate(cid);
+          if (symbol) {
+            symbol.x = 0;
+            symbol.y = 0;
+            drawNodeTree(ctx, symbol);
+            return;
+          }
+        }
+      }
+    } catch {
+      // fall through to the procedural shell
+    }
     drawShellBullet(ctx, this.bulletRadius, this.isEnemy);
   }
 
@@ -316,14 +353,14 @@ export function angleToTarget(bullet: { x: number; y: number }, target: { x: num
 /** `_-U7` — standard bubble round (player side). */
 export class ShellBullet extends Bullet {
   constructor(x: number, y: number, rotation: number, scale: number, speed: number, damage: number) {
-    super(x, y, rotation, speed, damage, { scale, isEnemy: false, bulletRadius: 8 });
+    super(x, y, rotation, speed, damage, { scale, isEnemy: false, bulletRadius: 8, claType: "_-U7" });
   }
 }
 
 /** `_-GV` — standard enemy shell. */
 export class EnemyShellBullet extends Bullet {
   constructor(x: number, y: number, rotation: number, scale: number, speed: number, damage: number) {
-    super(x, y, rotation, speed, damage, { scale, isEnemy: true, bulletRadius: 8 });
+    super(x, y, rotation, speed, damage, { scale, isEnemy: true, bulletRadius: 8, claType: "_-GV" });
   }
 }
 
@@ -338,6 +375,7 @@ export class EnemySeekerBullet extends Bullet {
       destroyable: true,
       rotateTowardTarget: true,
       bulletRadius: 8,
+      claType: "_-QM",
     });
   }
 }

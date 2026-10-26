@@ -138,6 +138,10 @@ export class GameWorld {
     this.avatar.onAvatarDeathJump = () => this.deathJump();
     this.currentAvatarCode = this.avatar.data.strTankCode;
 
+    // Stage anchor (docs 03 §4b): the avatar clip stays at the stage center
+    // while the world slides underneath; the tank's own view only rotates.
+    this.avatarView.x = STAGE_CENTER_X;
+    this.avatarView.y = STAGE_CENTER_Y;
     this.avatarView.addChild(this.avatar.view);
     this.hud.setup(this.avatar, (vx, vy) => this.adjustBubblefieldObjects(vx, vy));
     this.hud.onOpenUpgradeMenu = () => this.openUpgradeMenu();
@@ -366,23 +370,29 @@ export class GameWorld {
   /** Main menu (`_-FF = 2`): Play/Continue + Settings. */
   showMainMenu(): void {
     if (this.menu) return;
-    this.menu = new MainMenu(this.settings.value.SavedData, () => {
+    const menu = new MainMenu(this.settings.value.SavedData, () => {
+      this.view.removeChild(menu.view);
       this.menu = null;
       this.mode = WORLD_MODE.PLAYING;
       this.settings.save();
     }, this.settings);
-    this.view.addChild(this.menu.view);
+    this.menu = menu;
+    this.view.addChild(menu.view);
   }
 
   /** "What's New" notification — first launch only (`_-7W` gate; the port
    * keys it on the BTA saved flag). */
   maybeShowStartNotification(): void {
     if (this.settings.value.SavedData) return;
-    this.notification = new StartNotification(() => {
+    const notification = new StartNotification(() => {
+      // remove the view: a dismissed overlay must stop painting (the
+      // draw guard alone would leave the node mounted)
+      this.view.removeChild(notification.view);
       this.notification = null;
       this.settings.save();
     });
-    this.view.addChild(this.notification.view);
+    this.notification = notification;
+    this.view.addChild(notification.view);
   }
 
   /** `PauseMenuSetup` (docs 04 §5.1) — bound to the pause hotkey. */
@@ -432,10 +442,12 @@ export class GameWorld {
   /** Boss beaten → the win screen (docs 03 §3). */
   private showWinScreen(): void {
     if (this.winScreen) return;
-    this.winScreen = new WinScreen(() => {
+    const winScreen = new WinScreen(() => {
+      this.view.removeChild(winScreen.view);
       this.winScreen = null;
     }, { fieldsVisited: this.visitedCount, tanksDefeated: this.tanksDefeated });
-    this.view.addChild(this.winScreen.view);
+    this.winScreen = winScreen;
+    this.view.addChild(winScreen.view);
   }
 
   /** `BTAGameWorld.Run` mode switch (BTAGameWorld.as:517-560). */
@@ -481,10 +493,8 @@ export class GameWorld {
     };
     // World-mode mirror (GetWState — the health readout hides bars in mode 3).
     this.currentField.worldMode = this.mode;
-    // The avatar's view is stage-anchored: always at center, rotated with the hull.
-    this.avatar.view.x = STAGE_CENTER_X;
-    this.avatar.view.y = STAGE_CENTER_Y;
-    this.avatar.view.rotation = this.avatar.rotation;
+    // The avatar's view is stage-anchored via avatarView (set in setup);
+    // syncView applies only the hull rotation to the tank's own node.
     switch (this.mode) {
       case WORLD_MODE.PLAYING:
         this.checkExitTrigger();

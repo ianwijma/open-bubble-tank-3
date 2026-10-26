@@ -82,6 +82,9 @@ export class AvatarInterface {
 
   constructor() {
     this.view = new DisplayNode(undefined, "avatarInterface");
+    // wire the canvas HUD into the render tree (life/weapon bars + minimap
+    // draw above the world layers — the other screens use the same pattern)
+    this.view.draw = (ctx) => this.draw(ctx);
   }
 
   /** `Setup` — wire avatar + world scroll callback. */

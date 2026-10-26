@@ -19,8 +19,10 @@ import {
   STAGE_COLOR,
   STAGE_HEIGHT,
   STAGE_WIDTH,
+  SwfArtStore,
   loadSwfAssets,
   renderTree,
+  setArtStore,
   type SoundCue,
   type SwfAssetBundle,
 } from "@open-bt3/game";
@@ -80,22 +82,29 @@ export default function Home() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const gameRef = useRef<{
+  type GameHandle = {
     world: GameWorld;
     loop: FixedLoop;
     input: Input;
     data: GameData;
     sink: SwfSoundSink;
-  } | null>(null);
+  };
+  const gameRef = useRef<GameHandle | null>(null);
+  // The loaded SWF bundle, retained so a sink created later (Start click)
+  // still picks up the sounds from a boot-phase load.
+  const bundleRef = useRef<SwfAssetBundle | null>(null);
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback((): GameHandle | null => {
     const canvas = canvasRef.current;
-    if (!canvas || gameRef.current) return;
+    if (!canvas || gameRef.current) return null;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) return null;
 
     const data = new GameData();
     const sink = new SwfSoundSink();
+    // Sounds from a SWF loaded before Start (boot phase) or reloaded
+    // mid-game land here via the retained bundle ref.
+    if (bundleRef.current) void sink.load(bundleRef.current);
     const world = new GameWorld();
     world.soundSink = { play: (cue) => sink.play(cue) };
     world.onQuit = () => {
@@ -122,10 +131,13 @@ export default function Home() {
         world.screenFx.flash = Math.max(0, world.screenFx.flash - 0.06);
       },
       render: () => {
-        ctx.save();
+        // The backing store is 2× (crisp text on hidpi); the stage draws in
+        // 550×450 coordinates, so the 2× device scale must be applied.
+        ctx.setTransform(2, 0, 0, 2, 0, 0);
         ctx.fillStyle = STAGE_COLOR;
         ctx.fillRect(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
         const fx = world.screenFx;
+        ctx.save();
         if (fx.shake > 0 && world.settings.value.ss) {
           ctx.translate((Math.random() - 0.5) * fx.shake, (Math.random() - 0.5) * fx.shake);
         }
@@ -140,6 +152,7 @@ export default function Home() {
     loop.start();
     gameRef.current = { world, loop, input, data, sink };
     setPhase("running");
+    return gameRef.current;
   }, []);
 
   // Teardown on unmount (dev strict-mode double mount).
@@ -157,14 +170,26 @@ export default function Home() {
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const bundle = await loadSwfAssets(bytes, (line) => console.log(`[swf] ${line}`));
-      if (gameRef.current) await gameRef.current.sink.load(bundle);
+      // Install the parsed art + retain the bundle: parts/fields/bullets
+      // rebuild through the SymbolClass map on the next world construction,
+      // and the (new) sink picks the sounds up from the retained bundle.
+      setArtStore(new SwfArtStore(bundle));
+      bundleRef.current = bundle;
+      if (gameRef.current) {
+        // A mid-game load restarts the world so every view rebuilds with
+        // the real art (the boot flow loads before Start, so this is the
+        // rare path). startGame wires the fresh sink to the bundle.
+        gameRef.current.loop.stop();
+        gameRef.current = null;
+        startGame();
+      }
       setBundleName(file.name);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [startGame]);
 
   // Drag & drop on the whole window.
   useEffect(() => {

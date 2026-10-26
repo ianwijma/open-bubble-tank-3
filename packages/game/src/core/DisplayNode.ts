@@ -24,6 +24,8 @@ export class DisplayNode {
   visible = true;
   /** Draw callback for leaf nodes (containers leave this unset). */
   draw: DrawFn | null = null;
+  /** SWF color transform retained from placements (renderer may tint). */
+  cxform: { rM: number; gM: number; bM: number; aM: number; rO: number; gO: number; bO: number; aO: number } | null = null;
 
   private children: DisplayNode[] = [];
   private parent: DisplayNode | null = null;
@@ -36,6 +38,11 @@ export class DisplayNode {
 
   getName(): string {
     return this.name;
+  }
+
+  /** Instance name (`BF_BG_mc` etc. — placements carry them). */
+  setName(name: string): void {
+    this.name = name;
   }
 
   getParent(): DisplayNode | null {
