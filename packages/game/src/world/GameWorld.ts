@@ -241,6 +241,10 @@ export class GameWorld {
     field.onCompleted = (completed) => {
       if (completed.isBossField) this.onBossDefeated?.();
     };
+    // Apocalypse field death (docs 08 §3.1): the world transitions onward.
+    field.onApocalypseEnd = () => {
+      if (!this.jumping) this.exitViaNearestMarker(false);
+    };
     this.fieldLayer.addChild(field.view);
     return field;
   }
@@ -276,6 +280,8 @@ export class GameWorld {
       x: input.mouseX - this.currentField.view.x,
       y: input.mouseY - this.currentField.view.y,
     };
+    // World-mode mirror (GetWState — the health readout hides bars in mode 3).
+    this.currentField.worldMode = this.mode;
     // The avatar's view is stage-anchored: always at center, rotated with the hull.
     this.avatar.view.x = STAGE_CENTER_X;
     this.avatar.view.y = STAGE_CENTER_Y;
@@ -285,7 +291,9 @@ export class GameWorld {
         this.checkExitTrigger();
         this.hud.run(input);
         this.currentField.run();
-        this.avatar.run();
+        // Apocalypse shrink (docs 08 §3.1): player control is paused while
+        // the field dies; the field keeps running its own anim.
+        if (!this.currentField.blnApocalypse) this.avatar.run();
         break;
       case WORLD_MODE.TRANSIT:
         // Mode 2 runs the interface + both fields + the transit step; the

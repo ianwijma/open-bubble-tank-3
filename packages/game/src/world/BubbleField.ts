@@ -7,14 +7,18 @@
  * 70-frame delay; leftover bubbles then force-collect (`_-K2`).
  */
 
-import { FIELD_RADIUS } from "../core/constants";
+import { AREA_RANGE_MULT, FIELD_RADIUS } from "../core/constants";
 import { DisplayNode } from "../core/DisplayNode";
+import { randInt } from "../core/math";
 import { makeExitMarkers, makeFieldBackground } from "../render/art/FieldArt";
 import type { EffectRequest, FieldContext, SoundCue, TankLike } from "../entities/field-context";
 import type { FieldBullet } from "../entities/field-context";
 import { LifeBubble } from "../entities/LifeBubble";
 import { Bullet } from "../entities/bullets/Bullet";
-import { Tank } from "../entities/Tank";
+import { ConvertedSeeker, InfectorSeeker } from "../entities/bullets/specials";
+import { Tank, TANK_TYPE } from "../entities/Tank";
+import { EnemyAI } from "../entities/EnemyAI";
+import { TankData } from "../tanks/TankData";
 
 const COMPLETION_DELAY_FRAMES = 70;
 
@@ -66,6 +70,19 @@ export class BubbleField implements FieldContext {
   avatar: TankLike | null = null;
   /** Sound sink (world wires the real SoundPlayer; tests use a noop). */
   sounds: { play(cue: SoundCue): void } = { play: () => {} };
+  /** Screen effects sink (docs 08 §6): shake/flash consumed by the renderer. */
+  readonly screen = {
+    shake: (_magnitude: number): void => {},
+    flash: (): void => {},
+  };
+  /** World mode mirror (docs 08 §6) — health-readout hides bars in mode 3. */
+  worldMode = 0;
+
+  /** `blnApocalypse` (docs 08 §3.1) — active while the death-shrink runs. */
+  blnApocalypse = false;
+  private apocalypseTimer = 0;
+  /** Fired when the death-shrink completes (the world attaches a new field). */
+  onApocalypseEnd: (() => void) | null = null;
 
   constructor(options: FieldOptions) {
     this.scale = options.scale;
@@ -154,16 +171,199 @@ export class BubbleField implements FieldContext {
   }
 
   /**
-   * STUB (M2): `_ -U4` infector seeker spawns — infected tank death releases
-   * `count` seekers in random directions. Verbatim source call
+   * STUB (M2→M3 implemented): `_ -U4` infector seeker spawns — infected tank
+   * death releases `count` seekers in random directions. Verbatim source call
    * (`_-Zx.as:1001-1003`): `SpawnNewBullet(new _-U4, x, y, 1, rand(0,360),
    * 6, 1, false, null, null)` — scale 1, speed 6, damage 1, isEnemy=false
-   * (it hunts the dead tank's own kind, spreading infection). The real
-   * `_ -U4` bullet class (DoT + re-infection) arrives with the M2 weapon
-   * wave; until then this records the intent without spawning a
-   * wrong-behaving placeholder.
+   * (it hunts the dead tank's own kind, spreading infection). Wired to the
+   * real `_ -U4` class in M3.
    */
-  spawnInfectorSeekers(_x: number, _y: number, _count: number): void {}
+  spawnInfectorSeekers(x: number, y: number, count: number): void {
+    for (let i = 0; i < count; i++) {
+      const angle = randInt(0, 360);
+      this.spawnBulletFromField(new InfectorSeeker(x, y, angle, 1, 6, 1, null));
+    }
+  }
+
+  /** `SpawnNewAlly` (docs 07 §7.1): code import, `numLife = 15` forced. */
+  spawnNewAlly(code: string, x: number, y: number): void {
+    const data = new TankData();
+    if (!data.importTankCode(code)) return;
+    data.numLife = 15;
+    const ally = new Tank(data, TANK_TYPE.ALLY, this);
+    ally.x = x;
+    ally.y = y;
+    ally.intState = 1;
+    this.addAlly(ally);
+  }
+
+  // ------------------------------------------------------------- apocalypse
+
+  /** `beginApocalypse` (docs 08 §3.1) — starts the field death-shrink.
+   * The flag is already true during the fuse (set at wall contact), so the
+   * guard keys on the shrink timer, not the flag. */
+  beginApocalypse(): void {
+    if (this.apocalypseTimer > 0) return; // already shrinking
+    this.blnApocalypse = true;
+    this.apocalypseTimer = 204;
+  }
+
+  /** `endApocalypse` — Neutralizer: cancel the shrink, restore the field. */
+  endApocalypse(): void {
+    this.blnApocalypse = false;
+    this.apocalypseTimer = 0;
+    this.view.scaleX = 1;
+    this.view.scaleY = 1;
+  }
+
+  /** `SpawnNewEnemy` (docs 07 §6.4) — Enemy Spawner tank creation. */
+  spawnNewEnemy(code: string, x: number, y: number): void {
+    const data = new TankData();
+    if (!data.importTankCode(code)) return;
+    const enemy = new EnemyAI(data, TANK_TYPE.ENEMY, this);
+    enemy.x = x;
+    enemy.y = y;
+    enemy.rotation = randInt(-180, 180);
+    this.addEnemy(enemy);
+  }
+
+  /** Ticks the 204-frame shrink with escalating shake + random flashes.
+   * Runs only while the shrink timer is active — the fuse phase (flag set,
+   * timer 0) must not trip the end branch. */
+  private runApocalypse(): void {
+    if (this.apocalypseTimer <= 0) return;
+    this.apocalypseTimer--;
+    const t = 1 - this.apocalypseTimer / 204;
+    this.view.scaleX = Math.max(0.01, 1 - t);
+    this.view.scaleY = this.view.scaleX;
+    this.screen.shake(t * 8);
+    if (Math.random() < 0.08) this.screen.flash();
+    if (this.apocalypseTimer <= 0) {
+      this.view.visible = false;
+      this.blnApocalypse = false;
+      this.onApocalypseEnd?.();
+    }
+  }
+
+  // ------------------------------------------------------ area-effect API
+
+  /** `_-E6` — IsWithinRange with the ×1.15 slack. */
+  private withinRange(ax: number, ay: number, bx: number, by: number, radius: number): boolean {
+    return (ax - bx) ** 2 + (ay - by) ** 2 < (radius * AREA_RANGE_MULT) ** 2;
+  }
+
+  /**
+   * `AreaDamageTest` (docs 08 §4.2). `source` = the excluded tank (the
+   * exploding bullet's owner side); origin coordinates are field-local.
+   */
+  areaDamageTest(
+    mode: "r" | "e" | "t",
+    source: TankLike | null,
+    x: number,
+    y: number,
+    radius: number,
+    damage: number,
+    push = false,
+  ): void {
+    if (mode === "r") {
+      for (const enemy of this.enemies) {
+        if (!enemy.alive || enemy === source) continue;
+        if (this.withinRange(enemy.x, enemy.y, x, y, radius)) enemy.damage(damage);
+      }
+      for (const bullet of this.bullets) {
+        // enemy destroyable bullets in radius, measured from the origin
+        if (bullet.isEnemy && bullet.destroyable && !bullet.readyForDelete) {
+          if (this.withinRange(bullet.x, bullet.y, x, y, radius)) bullet.readyForDelete = true;
+        }
+      }
+      return;
+    }
+    // "e" / "t": avatar + allies
+    const avatar = this.avatar;
+    if (avatar && avatar.alive && this.withinRange(avatar.x, avatar.y, x, y, radius)) {
+      avatar.damage(damage);
+      if (push) {
+        const d = Math.sqrt((avatar.x - x) ** 2 + (avatar.y - y) ** 2) || 1;
+        const mag = (5 * radius) / (d * d);
+        avatar.push(((avatar.x - x) / d) * mag, ((avatar.y - y) / d) * mag);
+      }
+    }
+    for (const ally of this.allies) {
+      if (!ally.alive) continue;
+      if (!this.withinRange(ally.x, ally.y, x, y, radius)) continue;
+      ally.damage(damage);
+      if (push) {
+        const d = Math.sqrt((ally.x - x) ** 2 + (ally.y - y) ** 2) || 1;
+        const mag = ((5 * radius) / (d * d)) * 2; // non-avatar targets at 2×
+        ally.push(((ally.x - x) / d) * mag, ((ally.y - y) / d) * mag);
+      }
+    }
+    for (const bullet of this.bullets) {
+      if (!bullet.isEnemy && bullet.destroyable && !bullet.readyForDelete) {
+        if (this.withinRange(bullet.x, bullet.y, x, y, radius)) bullet.readyForDelete = true;
+      }
+    }
+  }
+
+  /** `AreaStunTest` — stun enemies in radius + burst flash + stun marks. */
+  areaStunTest(x: number, y: number, radius: number, duration: number): void {
+    this.spawnBurstEffect(x, y, radius);
+    for (const enemy of this.enemies) {
+      if (!enemy.alive) continue;
+      if (this.withinRange(enemy.x, enemy.y, x, y, radius)) enemy.stunMe(duration);
+    }
+  }
+
+  /** `AreaBurstTest` — plain radius (no slack) vs enemies + enemy bullets. */
+  areaBurstTest(x: number, y: number, radius: number, damage: number): void {
+    this.spawnBurstEffect(x, y, radius);
+    for (const enemy of this.enemies) {
+      if (!enemy.alive) continue;
+      if ((enemy.x - x) ** 2 + (enemy.y - y) ** 2 <= radius * radius) enemy.damage(damage);
+    }
+    for (const bullet of this.bullets) {
+      if (bullet.isEnemy && bullet.destroyable && !bullet.readyForDelete) {
+        if ((bullet.x - x) ** 2 + (bullet.y - y) ** 2 <= radius * radius) bullet.readyForDelete = true;
+      }
+    }
+  }
+
+  /** Burst flash effect sized to the radius (the original's `_ -5`). */
+  private spawnBurstEffect(x: number, y: number, radius: number): void {
+    const node = new DisplayNode((ctx) => {
+      const grad = ctx.createRadialGradient(0, 0, radius * 0.2, 0, 0, radius);
+      grad.addColorStop(0, "rgba(210,245,255,0.55)");
+      grad.addColorStop(0.7, "rgba(120,200,235,0.25)");
+      grad.addColorStop(1, "rgba(120,200,235,0)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }, "burstFlash");
+    this.addEffect({ node, x, y, layer: "TopEffectsLayer", randomRotation: false, frames: 10 });
+  }
+
+  /**
+   * `DroneConversionTest` (docs 08 §4.5) — every seeker-family bullet of the
+   * opposite side is removed and replaced by a homing shell aimed at a random
+   * enemy (quirk preserved: the index roll can never pick the last enemy).
+   */
+  droneConversionTest(x: number, y: number, toEnemySide: boolean): void {
+    // snapshot: the converted replacements spawn into `bullets` mid-loop —
+    // iterating the live array would convert the conversions forever.
+    for (const bullet of [...this.bullets]) {
+      if (bullet.isEnemy !== toEnemySide || !bullet.destroyable) continue;
+      if (!bullet.rotateTowardTarget) continue;
+      if (bullet.readyForDelete) continue;
+      bullet.readyForDelete = true;
+      const enemies = this.enemies.filter((e) => e.alive);
+      // original quirk: floor(random*(len-1)) never selects the last enemy
+      const idx = enemies.length > 0 ? Math.floor(Math.random() * (enemies.length - 1)) : -1;
+      const target = idx >= 0 ? enemies[idx] ?? null : null;
+      const replacement = new ConvertedSeeker(x, y, bullet.rotation, 1, toEnemySide ? 5 : 10, toEnemySide ? 1 : 15, target, !toEnemySide);
+      this.spawnBulletFromField(replacement);
+    }
+  }
 
   /** `AddEffectToQueue` — timed effect node on a layer. */
   addEffect(request: EffectRequest): void {
@@ -213,6 +413,7 @@ export class BubbleField implements FieldContext {
     this.lifeBubbleCollisionDetection();
     for (const bubble of this.lifeBubbles) bubble.run();
     this.testForCompletion();
+    this.runApocalypse();
     this.tickEffects();
     if (this.shootSoundTimer > 0) this.shootSoundTimer--;
     if (this.collectSoundTimer > 0) this.collectSoundTimer--;
