@@ -1,13 +1,12 @@
 "use client";
 
 /**
- * Bubble Tanks 3 — open re-implementation. M1 shell.
+ * Bubble Tanks 3 — open re-implementation. M5 app shell.
  *
- * A full-bleed 550×450 stage canvas mounts the game core (`@open-bt3/game`):
- * FixedLoop drives GameWorld at the configured fps, Input feeds the snapshot,
- * renderTree draws the DisplayNode tree. All gameplay UI is in-canvas; the
- * only DOM chrome is the asset picker (a user-supplied SWF — the repo ships
- * no Hero Interactive art) and the initial drop zone.
+ * The game core owns every in-canvas screen (main menu, pause, settings,
+ * creator, upgrade menu, win screen). The app mounts the 550×450 stage,
+ * feeds the FixedLoop, loads the user's SWF for art/sounds, and applies the
+ * persisted settings (fps, shake, sounds) to the loop + screen-fx sink.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,17 +16,14 @@ import {
   GameData,
   GameWorld,
   Input,
-  loadSwfAssets,
-  renderTree,
   STAGE_COLOR,
   STAGE_HEIGHT,
   STAGE_WIDTH,
-  type InputSnapshot,
+  loadSwfAssets,
+  renderTree,
   type SoundCue,
   type SwfAssetBundle,
 } from "@open-bt3/game";
-
-type Phase = "boot" | "menu" | "playing" | "paused";
 
 /** Sound cue → ExportAssets name (docs 09-audio-effects.md §6). */
 const CUE_SYMBOLS: Partial<Record<SoundCue, string>> = {
@@ -44,6 +40,7 @@ const CUE_SYMBOLS: Partial<Record<SoundCue, string>> = {
 class SwfSoundSink {
   private buffers = new Map<SoundCue, AudioBuffer>();
   private ctx: AudioContext | null = null;
+  enabled = true;
 
   async load(bundle: SwfAssetBundle): Promise<void> {
     const Ctx = window.AudioContext;
@@ -63,6 +60,7 @@ class SwfSoundSink {
   }
 
   play(cue: SoundCue): void {
+    if (!this.enabled) return;
     const buffer = this.buffers.get(cue);
     const ctx = this.ctx;
     if (!buffer || !ctx) return;
@@ -77,13 +75,11 @@ class SwfSoundSink {
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const [phase, setPhase] = useState<Phase>("boot");
+  const [phase, setPhase] = useState<"boot" | "running">("boot");
   const [bundleName, setBundleName] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Everything the loop needs lives in one ref cell so React re-renders
-  // never touch the running game.
   const gameRef = useRef<{
     world: GameWorld;
     loop: FixedLoop;
@@ -102,73 +98,49 @@ export default function Home() {
     const sink = new SwfSoundSink();
     const world = new GameWorld();
     world.soundSink = { play: (cue) => sink.play(cue) };
+    world.onQuit = () => {
+      // Quit Playing (docs 04 §5.1): tear down and return to the main menu.
+      gameRef.current?.loop.stop();
+      gameRef.current = null;
+      startGame();
+    };
     world.setup();
+    void world.loadProfile();
+    world.showMainMenu();
+    world.maybeShowStartNotification();
 
     const input = new Input(canvas);
     const loop = new FixedLoop({
-      fps: data.settings.fps ?? DEFAULT_FPS,
+      fps: data.settings.fps ?? world.settings.value.f,
       update: () => {
-        const snapshot: InputSnapshot = input.snapshot();
-        world.run(snapshot);
+        world.run(input.snapshot());
+        // settings live-apply (fps + audio)
+        loop.setFps(world.settings.value.f);
+        sink.enabled = world.settings.value.s;
+        // screen-fx decay (shake consumed by the render below)
+        world.screenFx.shake = Math.max(0, world.screenFx.shake - 0.8);
+        world.screenFx.flash = Math.max(0, world.screenFx.flash - 0.06);
       },
       render: () => {
+        ctx.save();
         ctx.fillStyle = STAGE_COLOR;
         ctx.fillRect(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
+        const fx = world.screenFx;
+        if (fx.shake > 0 && world.settings.value.ss) {
+          ctx.translate((Math.random() - 0.5) * fx.shake, (Math.random() - 0.5) * fx.shake);
+        }
         renderTree(ctx, world.view);
+        ctx.restore();
+        if (fx.flash > 0) {
+          ctx.fillStyle = `rgba(255,255,255,${Math.min(0.85, fx.flash)})`;
+          ctx.fillRect(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
+        }
       },
     });
     loop.start();
     gameRef.current = { world, loop, input, data, sink };
-    setPhase("menu");
+    setPhase("running");
   }, []);
-
-  // Menu/pause keyboard + click handling lives outside Input (which is for
-  // gameplay only).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      const game = gameRef.current;
-      if (!game) return;
-      setPhase((phase) => {
-        if (phase === "menu" && (e.key === " " || e.key === "Enter")) return "playing";
-        if (phase === "playing" && !game.world.upgradeMenuOpen && (e.key === "p" || e.key === "P" || e.key === "Escape")) {
-          game.world.pause();
-          return "paused";
-        }
-        if (phase === "paused" && (e.key === "p" || e.key === "P" || e.key === "Escape")) {
-          game.world.resume();
-          return "playing";
-        }
-        return phase;
-      });
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  useEffect(() => {
-    const onClick = (): void => {
-      const game = gameRef.current;
-      if (!game) return;
-      setPhase((phase) => (phase === "menu" ? "playing" : phase));
-    };
-    const canvas = canvasRef.current;
-    canvas?.addEventListener("click", onClick);
-    return () => canvas?.removeEventListener("click", onClick);
-  }, [phase]);
-
-  // Pause the simulation when the tab hides (rAF already stops; resume clean).
-  useEffect(() => {
-    const onVisibility = (): void => {
-      const game = gameRef.current;
-      if (!game) return;
-      if (document.hidden && phase === "playing") {
-        game.world.pause();
-        setPhase("paused");
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [phase]);
 
   // Teardown on unmount (dev strict-mode double mount).
   useEffect(
@@ -187,7 +159,6 @@ export default function Home() {
       const bundle = await loadSwfAssets(bytes, (line) => console.log(`[swf] ${line}`));
       if (gameRef.current) await gameRef.current.sink.load(bundle);
       setBundleName(file.name);
-      setPhase((phase) => (phase === "boot" ? "menu" : phase));
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -211,56 +182,13 @@ export default function Home() {
     };
   }, [loadSwf]);
 
-  // In-canvas menu/pause overlays: drawn on top of the game tree each frame
-  // the phase calls for it.
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || phase === "playing" || phase === "boot") return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.fillStyle = "rgba(8,16,18,0.72)";
-    ctx.fillRect(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#dff3f5";
-    if (phase === "menu") {
-      ctx.font = "bold 44px system-ui, sans-serif";
-      ctx.fillText("Bubble Tanks 3", STAGE_WIDTH / 2, 170);
-      ctx.font = "13px system-ui, sans-serif";
-      ctx.fillStyle = "rgba(223,243,245,0.75)";
-      ctx.fillText(bundleName ? `assets: ${bundleName}` : "no SWF loaded — procedural art", STAGE_WIDTH / 2, 205);
-      ctx.fillStyle = "#9fd8de";
-      ctx.font = "bold 20px system-ui, sans-serif";
-      const pulse = (Math.sin(performance.now() / 400) + 1) / 2;
-      ctx.globalAlpha = 0.55 + 0.45 * pulse;
-      ctx.fillText("click or press Space to play", STAGE_WIDTH / 2, 270);
-      ctx.globalAlpha = 1;
-    } else {
-      ctx.font = "bold 34px system-ui, sans-serif";
-      ctx.fillText("Paused", STAGE_WIDTH / 2, 210);
-      ctx.font = "14px system-ui, sans-serif";
-      ctx.fillStyle = "rgba(223,243,245,0.7)";
-      ctx.fillText("P or Esc to resume", STAGE_WIDTH / 2, 245);
-    }
-    ctx.textAlign = "left";
-  }, [phase, bundleName]);
-
   return (
     <main className="flex h-screen w-screen flex-col items-center justify-center overflow-hidden bg-[#0b1516]">
-      <div
-        className="relative w-full max-w-[1100px]"
-        style={{ aspectRatio: `${STAGE_WIDTH} / ${STAGE_HEIGHT}` }}
-      >
+      <div className="relative w-full max-w-[1100px]" style={{ aspectRatio: `${STAGE_WIDTH} / ${STAGE_HEIGHT}` }}>
         <canvas
           ref={canvasRef}
           width={STAGE_WIDTH * 2}
           height={STAGE_HEIGHT * 2}
-          onClick={() => {
-            const game = gameRef.current;
-            if (game && phase === "paused") {
-              game.world.resume();
-              setPhase("playing");
-            }
-          }}
           className="h-full w-full rounded-lg shadow-[0_0_60px_rgba(0,0,0,0.6)]"
           style={{ imageRendering: "auto", touchAction: "none" }}
         />
@@ -276,8 +204,8 @@ export default function Home() {
           >
             <h1 className="text-3xl font-bold tracking-wide text-cyan-100">Bubble Tanks 3</h1>
             <p className="max-w-sm text-sm text-slate-300/80">
-              Open re-implementation. Drop your own <code>Bubble Tanks 3.swf</code> here to load
-              the original art &amp; sounds, or start without it (procedural art).
+              Open re-implementation. Drop your own <code>Bubble Tanks 3.swf</code> here to load the
+              original art &amp; sounds, or start without it (procedural art).
             </p>
             <div className="flex items-center gap-3">
               <button
@@ -296,7 +224,8 @@ export default function Home() {
               </button>
             </div>
             {loadError ? <p className="text-sm text-rose-300">SWF load failed: {loadError}</p> : null}
-            <p className="text-xs text-slate-400/60">WASD move · mouse aim · click shoot · P pause</p>
+            {bundleName ? <p className="text-xs text-emerald-300/80">loaded: {bundleName}</p> : null}
+            <p className="text-xs text-slate-400/60">WASD move · mouse aim · click shoot · Space secondaries · P pause</p>
           </div>
         ) : null}
       </div>
