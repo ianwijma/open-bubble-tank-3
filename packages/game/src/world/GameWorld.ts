@@ -17,20 +17,24 @@
 import {
   STAGE_CENTER_X,
   STAGE_CENTER_Y,
+  TANK_LEVEL_LIFE,
   TRANSIT_ARRIVE_DIST_SQ,
 } from "../core/constants";
 import { DisplayNode } from "../core/DisplayNode";
 import { randInt } from "../core/math";
 import type { InputSnapshot } from "../core/Input";
-import { BOSSES, getStartingAvatar, searchLocalAvatarOffers } from "../data/tanks";
+import { BOSSES, ENEMY_BANK, AVATAR_PRESETS, getStartingAvatar, searchLocalAvatarOffers } from "../data/tanks";
 import { CLASS_DATA, TIER_UNLOCKS } from "../data/parts";
+import { PlayerProfile, SettingsStore } from "../data/profile";
 import { generateBossWave, generateWave, UnitTable } from "../data/waves";
 import { EnemyAI } from "../entities/EnemyAI";
 import type { SoundCue } from "../entities/field-context";
 import { Tank, TANK_TYPE } from "../entities/Tank";
 import { TankData } from "../tanks/TankData";
 import { AvatarInterface } from "../ui/AvatarInterface";
-import { UpgradeMenu, type UpgradeMenuContext } from "../ui/UpgradeMenu";
+import { UpgradeMenu, describeTankParts, type UpgradeMenuContext } from "../ui/UpgradeMenu";
+import { TankCreatorScreen } from "../ui/TankCreator";
+import { MainMenu, PauseMenu, StartNotification, WinScreen, type PauseAction } from "../ui/screens";
 import { BubbleField } from "./BubbleField";
 import { DESTROYED, FieldStore, type StoredEnemy } from "./FieldStore";
 
@@ -54,6 +58,10 @@ export class GameWorld {
   readonly hud = new AvatarInterface();
   readonly store = new FieldStore();
   readonly units = new UnitTable();
+  /** `Player1Profile` mirror (M4 persistence). */
+  readonly profile = new PlayerProfile(AVATAR_PRESETS, ENEMY_BANK);
+  /** `BTA` settings mirror. */
+  readonly settings = new SettingsStore();
 
   mode: WorldMode = WORLD_MODE.PLAYING;
 
@@ -87,6 +95,21 @@ export class GameWorld {
   /** The open UpgradeMenu screen, if any (Main state 4: the world freezes). */
   private upgradeMenuInstance: UpgradeMenu | null = null;
   private modeBeforeMenu: WorldMode = WORLD_MODE.PLAYING;
+  /** The open TankCreatorScreen (M4). */
+  private creatorInstance: TankCreatorScreen | null = null;
+
+  // --- M5 screens ---
+  menu: MainMenu | null = null;
+  pauseMenu: PauseMenu | null = null;
+  winScreen: WinScreen | null = null;
+  notification: StartNotification | null = null;
+  /** Quit-to-menu action (the app resets the world). */
+  onQuit: (() => void) | null = null;
+  /** Tanks-defeated counter for the win screen (docs 03 §3 stat). */
+  tanksDefeated = 0;
+  /** Screen-fx sink the app consumes (shake magnitude / flash pulse). */
+  screenFx: { shake: number; flash: number } = { shake: 0, flash: 0 };
+  private prevPauseKey = false;
 
   /** Fired when the boss field is beaten (win screen is M5). */
   onBossDefeated: (() => void) | null = null;
@@ -162,6 +185,10 @@ export class GameWorld {
     return this.upgradeMenuInstance !== null;
   }
 
+  get creatorOpen(): boolean {
+    return this.creatorInstance !== null;
+  }
+
   /** `_-3F` — open the UpgradeMenu screen; the world freezes (Main state 4). */
   openUpgradeMenu(): void {
     if (this.upgradeMenuInstance) return;
@@ -170,6 +197,47 @@ export class GameWorld {
     this.upgradeMenuInstance = new UpgradeMenu();
     this.upgradeMenuInstance.setup(this.makeMenuContext());
     this.view.addChild(this.upgradeMenuInstance.view);
+  }
+
+  /**
+   * `TankCreatorScreen` overlay (docs 04 §4.5): seeded with the current
+   * avatar for the UpgradeMenu edit path; `onDone(null)` cancels. Saving
+   * registers the tank in the profile under the next `L` id and re-places
+   * the avatar with the slot overwrite.
+   */
+  openTankCreator(seed: TankData | null, onSaved: ((code: string) => void) | null = null): void {
+    if (this.creatorInstance) return;
+    this.modeBeforeMenu = this.mode;
+    this.mode = WORLD_MODE.MENU;
+    this.creatorInstance = new TankCreatorScreen({
+      isAvatar: true,
+      maxClass: Math.min(6, this.hud.maxClass),
+      unlockedObjects: this.profile.unlockedObjects,
+      alwaysUnlocked: new Set<number>(),
+      tier: this.hud.intTankLevel,
+      seed,
+      onDone: (saved) => {
+        this.view.removeChild(this.creatorInstance!.view);
+        this.creatorInstance = null;
+        this.mode = this.modeBeforeMenu;
+        if (!saved) return;
+        const id = this.profile.addLocalTank(saved, true, this.settings.value.intEnemyCountMaster);
+        void id;
+        this.settings.save({ intEnemyCountMaster: this.settings.value.intEnemyCountMaster + 1 });
+        void this.profile.save();
+        this.currentAvatarCode = saved.strTankCode;
+        if (onSaved) onSaved(saved.strTankCode);
+        else {
+          this.placeAvatar(0); // edit path: slot overwrite (docs 04 §4.4)
+        }
+      },
+    });
+    this.view.addChild(this.creatorInstance.view);
+  }
+
+  /** Async profile load (`_-4s`) — the app awaits this after setup. */
+  async loadProfile(): Promise<void> {
+    await this.profile.loadAsync();
   }
 
   /** `_-7x` — close the menu, restore the world mode. */
@@ -192,6 +260,7 @@ export class GameWorld {
     for (let tier = 0; tier < level; tier++) {
       for (const id of TIER_UNLOCKS[tier] ?? []) this.unlockedParts.add(id);
     }
+    this.profile.grantTierUnlocks(level);
   }
 
   /** `GetDefaultTank` — saved-history lookup (verbatim: GP index is
@@ -232,14 +301,39 @@ export class GameWorld {
       applyChoice(code: string): void {
         world.applyUpgradeChoice(code);
       },
+      editCurrentTank(): void {
+        world.openUpgradeMenuEdit();
+      },
     };
+  }
+
+  /** `EditTank`/`_-NJ` — open the creator seeded with the current avatar
+   * (docs 04 §4.4); on save the level's progression slot updates. */
+  private openUpgradeMenuEdit(): void {
+    if (this.upgradeMenuInstance) {
+      this.view.removeChild(this.upgradeMenuInstance.view);
+      this.upgradeMenuInstance = null;
+    }
+    this.mode = this.modeBeforeMenu; // restore before the creator snapshots it
+    this.openTankCreator(this.avatar.data);
   }
 
   private makeField(options: { scale: number; col: number; row: number }): BubbleField {
     const field = new BubbleField(options);
     field.sounds = this.soundSink;
+    // screen-fx sink → the world-level state (the app render consumes it)
+    field.screen.shake = (m: number) => {
+      this.screenFx.shake = Math.max(this.screenFx.shake, m);
+    };
+    field.screen.flash = () => {
+      this.screenFx.flash = Math.max(this.screenFx.flash, 0.5);
+    };
     field.onCompleted = (completed) => {
-      if (completed.isBossField) this.onBossDefeated?.();
+      if (completed.isBossField) {
+        this.tanksDefeated++;
+        this.onBossDefeated?.();
+        this.showWinScreen();
+      }
     };
     // Apocalypse field death (docs 08 §3.1): the world transitions onward.
     field.onApocalypseEnd = () => {
@@ -267,11 +361,116 @@ export class GameWorld {
 
   // -------------------------------------------------------------------- run
 
+  // ---------------------------------------------------------- M5 screens
+
+  /** Main menu (`_-FF = 2`): Play/Continue + Settings. */
+  showMainMenu(): void {
+    if (this.menu) return;
+    this.menu = new MainMenu(this.settings.value.SavedData, () => {
+      this.menu = null;
+      this.mode = WORLD_MODE.PLAYING;
+      this.settings.save();
+    }, this.settings);
+    this.view.addChild(this.menu.view);
+  }
+
+  /** "What's New" notification — first launch only (`_-7W` gate; the port
+   * keys it on the BTA saved flag). */
+  maybeShowStartNotification(): void {
+    if (this.settings.value.SavedData) return;
+    this.notification = new StartNotification(() => {
+      this.notification = null;
+      this.settings.save();
+    });
+    this.view.addChild(this.notification.view);
+  }
+
+  /** `PauseMenuSetup` (docs 04 §5.1) — bound to the pause hotkey. */
+  private openPauseMenu(): void {
+    if (this.pauseMenu || this.mode !== WORLD_MODE.PLAYING) return;
+    this.pauseMenu = new PauseMenu((action) => this.pauseAction(action), this.settings, this.buildTankInfo());
+    this.view.addChild(this.pauseMenu.view);
+  }
+
+  private closePauseMenu(): void {
+    if (!this.pauseMenu) return;
+    this.view.removeChild(this.pauseMenu.view);
+    this.pauseMenu = null;
+  }
+
+  /** docs 04 §5.3 button table. */
+  private pauseAction(action: PauseAction): void {
+    switch (action) {
+      case "resume":
+        this.closePauseMenu();
+        break;
+      case "settings":
+        break; // the panel replaces the buttons inside PauseMenu
+      case "quit":
+        this.closePauseMenu();
+        this.onQuit?.();
+        break;
+      case "tankInfo":
+        break; // PauseMenu flips to its info page
+    }
+  }
+
+  /** `Tank Information` page content (docs 04 §6 tank-info panel). */
+  private buildTankInfo(): string[] {
+    const d = this.avatar.data;
+    const parts = describeTankParts(d.details);
+    return [
+      d.tankName,
+      `by ${d.author}`,
+      `Class: ${d.numClass}   Life: ${this.hud.intTankLevel === 0 ? d.numLife : TANK_LEVEL_LIFE[Math.min(6, this.hud.intTankLevel)]}`,
+      `Primary: ${parts.primary}`,
+      `Secondary: ${parts.secondary}`,
+      `Passive: ${parts.passive}`,
+    ];
+  }
+
+  /** Boss beaten → the win screen (docs 03 §3). */
+  private showWinScreen(): void {
+    if (this.winScreen) return;
+    this.winScreen = new WinScreen(() => {
+      this.winScreen = null;
+    }, { fieldsVisited: this.visitedCount, tanksDefeated: this.tanksDefeated });
+    this.view.addChild(this.winScreen.view);
+  }
+
   /** `BTAGameWorld.Run` mode switch (BTAGameWorld.as:517-560). */
   run(input: InputSnapshot): void {
-    // Main state 4/5 (upgrade screen): the world runs nothing but the menu.
+    // screens run exclusively, highest priority first (docs 04 flow)
+    if (this.notification) {
+      this.notification.run(input);
+      return;
+    }
+    if (this.menu) {
+      this.menu.run(input);
+      return;
+    }
+    if (this.creatorInstance) {
+      this.creatorInstance.run(input);
+      return;
+    }
     if (this.upgradeMenuInstance) {
       this.upgradeMenuInstance.run(input);
+      return;
+    }
+    if (this.winScreen) {
+      this.winScreen.run(input);
+      return;
+    }
+    // pause hotkey edge (P/Esc; docs 04 §5.1 guards menus/transit) — the
+    // original binds a key-DOWN handler, so each rising edge toggles.
+    const pauseEdge = input.pause && !this.prevPauseKey;
+    this.prevPauseKey = input.pause;
+    if (pauseEdge) {
+      if (this.pauseMenu) this.closePauseMenu();
+      else if (this.mode === WORLD_MODE.PLAYING && !this.currentField.blnApocalypse) this.openPauseMenu();
+    }
+    if (this.pauseMenu) {
+      this.pauseMenu.run(input);
       return;
     }
     this.frameCounter++;
